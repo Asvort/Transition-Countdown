@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="ui_mcm_menu_transition_countdown">
+		<text>Transition Countdown</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_title">
+		<text>Обратный отсчет до перехода</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_configure_in_game">
+		<text>Настроить в игре</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_configure_in_game_desc">
+		<text>Позволяет настроить во время игры.</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_enabled">
+		<text>Включить мод?</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_enabled_desc">
+		<text>Скрывает стандартное подтверждение перехода и запускает обратный отсчёт автоматически.</text>
+	</string>
+    <string id="ui_mcm_transition_countdown_force_key">
+        <text>Кнопка отправки сейчас:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_force_message">
+        <text>Эвакуация: %s</text>
+    </string>
+	<string id="ui_mcm_transition_countdown_duration">
+		<text>Таймер в секундах:</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_duration_desc">
+		<text>Сколько секунд игрок должен оставаться в области для автоматического перехода.</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_group_x">
+		<text>[Группа] X:</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_group_x_desc">
+		<text>Горизонтальное смещение центра группы от центра экрана.</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_group_y">
+		<text>[Группа] Y:</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_group_y_desc">
+		<text>Вертикальное смещение центра группы от центра экрана.</text>
+	</string>
+    <string id="ui_mcm_transition_countdown_digits_alpha">
+        <text>[Таймер] Прозрачность:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_digits_r">
+        <text>[Таймер] [Цвет] R:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_digits_g">
+        <text>[Таймер] [Цвет] G:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_digits_b">
+        <text>[Таймер] [Цвет] B:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_decimals">
+        <text>[Таймер] Десятые доли?</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_decimals_desc">
+        <text>[4.9, 4.8..] или [4, 3..]?</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_yes">
+        <text>Да</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_no">
+        <text>Нет</text>
+    </string>
+	<string id="ui_mcm_transition_countdown_digits_size">
+		<text>[Таймер] Масштаб:</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_digits_size_desc">
+		<text>Размер шрифта.</text>
+	</string>
+    <string id="ui_mcm_transition_countdown_digits_x">
+        <text>[Таймер] X:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_digits_x_desc">
+        <text>Горизонтальное смещение цифр таймера от центра группы.</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_digits_y">
+        <text>[Таймер] Y:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_digits_y_desc">
+        <text>Вертикальное смещение цифр таймера от центра группы.</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_alpha">
+        <text>[Текст] Прозрачность:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_r">
+        <text>[Текст] [Цвет] R:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_g">
+        <text>[Текст] [Цвет] G:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_b">
+        <text>[Текст] [Цвет] B:</text>
+    </string>
+	<string id="ui_mcm_transition_countdown_prompt_size">
+		<text>[Текст] Масштаб:</text>
+	</string>
+	<string id="ui_mcm_transition_countdown_prompt_size_desc">
+		<text>Размер шрифта.</text>
+	</string>
+    <string id="ui_mcm_transition_countdown_prompt_x">
+        <text>[Текст] X:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_x_desc">
+        <text>Горизонтальное смещение текста от центра группы.</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_y">
+        <text>[Текст] Y:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_prompt_y_desc">
+        <text>Вертикальное смещение текста от центра группы.</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_image_index">
+        <text>Изображение:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_success_image_index">
+        <text>Изображение при успехе:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_success_image_index_desc">
+        <text>Изменяет изображение после окончания таймера, пока мод пытается выполнить переход.</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_group_alpha">
+        <text>[Изображ.] Прозрачность:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_image_scale">
+        <text>[Изображение] Масштаб:</text>
+    </string>
+    <string id="ui_mcm_transition_countdown_image_scale_desc">
+        <text>Размер изображения.</text>
+    </string>
+</string_table>

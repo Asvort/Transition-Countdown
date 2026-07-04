@@ -1,0 +1,11 @@
+function on_mcm_load(options)
+    if transition_countdown and transition_countdown.on_mcm_load then
+        return transition_countdown.on_mcm_load(options)
+    end
+end
+
+function on_game_start()
+    if transition_countdown and transition_countdown.init then
+        transition_countdown.init()
+    end
+end
