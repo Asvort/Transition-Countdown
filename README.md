@@ -7,7 +7,9 @@
 <details open>
 <summary>🏞️</summary>
 
-> 
+> <img width="1920" height="1080" alt="2026-07-04_23-17-14" src="https://github.com/user-attachments/assets/4681241a-fe58-478f-9777-43790f80e226" />
+> <img width="1920" height="1080" alt="2026-07-04_23-16-48" src="https://github.com/user-attachments/assets/cb8e3ba8-073e-4a95-877d-16af72968a84" />
+> <img width="1920" height="1080" alt="2026-07-04_23-16-31" src="https://github.com/user-attachments/assets/48be70a9-e7a2-4323-9b2a-4e1c0cbab647" />
 </details>
 
 ## [🖥️] Tested || Протестирован
