@@ -1,0 +1,395 @@
+transition_countdown_adaptation = transition_countdown_adaptation or {}
+
+local M = transition_countdown_adaptation
+local MOD_ID = "transition_countdown"
+local GRIM_RAID_ICON_BASE_HEIGHT = 48
+local GRIM_RAID_TIER_COUNT = 4
+local CRITICAL_STATE_REFRESH_MS = 100
+local GRIM_RAID_ICON_NAMES = { "droplet", "radiation", "skull" }
+local GRIM_RAID_ICON_SOURCE_DIRECTORY = "textures\\ui\\transition_countdown_grim_raid\\icons\\"
+local GRIM_RAID_ICON_FILE_PREFIX = "textures\\ui\\transition_countdown_grim_raid\\dynamic\\"
+local GRIM_RAID_ICON_TEXTURE_PREFIX = "ui\\transition_countdown_grim_raid\\dynamic\\"
+local ICON_SETTING_DEFINITIONS = {
+    { suffix = "x", min = -512, max = 512, step = 1, default = 0, dp = 0, is_coord = true },
+    { suffix = "y", min = -384, max = 384, step = 1, default = 0, dp = 0, is_coord = true },
+    { suffix = "scale", min = 0.2, max = 3.0, step = 0.01, default = 1.0, dp = 2, is_scale = true },
+    { suffix = "r", min = 0, max = 255, step = 1, default = 255, dp = 0 },
+    { suffix = "g", min = 0, max = 255, step = 1, default = 255, dp = 0 },
+    { suffix = "b", min = 0, max = 255, step = 1, default = 255, dp = 0 },
+    { suffix = "alpha", min = 0, max = 100, step = 1, default = 95, dp = 0, is_percent = true },
+}
+local ICON_SETTING_DEFINITIONS_BY_SUFFIX = {}
+for _, definition in ipairs(ICON_SETTING_DEFINITIONS) do
+    ICON_SETTING_DEFINITIONS_BY_SUFFIX[definition.suffix] = definition
+end
+local grim_raid_checked = false
+local grim_raid_icon_slots_registered = false
+local restrictor_sections_by_id = {}
+
+M.is_grim_raid = false
+
+local function detect_grim_raid()
+    local ini_ok, ini = pcall(function() return system_ini and system_ini() end)
+    if ini_ok and ini and ini.section_exist then
+        local marker_ok, marker_found = pcall(function()
+            return ini:section_exist("raid_shelter_restrictor")
+                and ini:section_exist("raid_trader")
+        end)
+        if marker_ok and marker_found == true then return true end
+    end
+
+    if ini_file then
+        for _, file_name in ipairs({ "mod_system_xraids.ltx", "system.ltx" }) do
+            local file_ok, file_ini = pcall(ini_file, file_name)
+            if file_ok and file_ini and file_ini.section_exist then
+                local marker_ok, marker_found = pcall(function()
+                    return file_ini:section_exist("raid_shelter_restrictor")
+                        and file_ini:section_exist("raid_trader")
+                end)
+                if marker_ok and marker_found == true then return true end
+            end
+        end
+    end
+
+    return false
+end
+
+local function get_mcm_number(key, fallback)
+    if ui_mcm and ui_mcm.get then
+        local ok, value = pcall(ui_mcm.get, MOD_ID .. "/" .. key)
+        value = ok and tonumber(value) or nil
+        if value ~= nil then return value end
+    end
+    return fallback
+end
+
+local function clamp(value, minimum, maximum)
+    value = tonumber(value) or minimum
+    return math.max(minimum, math.min(value, maximum))
+end
+
+local function get_icon_setting(setting_prefix, suffix, bounded)
+    local definition = ICON_SETTING_DEFINITIONS_BY_SUFFIX[suffix]
+    local value = get_mcm_number(setting_prefix .. "_" .. suffix, definition.default)
+    if bounded then return clamp(value, definition.min, definition.max) end
+    return value
+end
+
+local function get_restrictor_section(wnd)
+    local restrictor_id = wnd and tonumber(wnd.__stc_restrictor_id) or nil
+    if not restrictor_id then return nil end
+    local cached_section = restrictor_sections_by_id[restrictor_id]
+    if cached_section ~= nil then return cached_section or nil end
+
+    local section = nil
+    local ok, object = pcall(alife_object, restrictor_id)
+    if ok and object then
+        local name_ok, name = pcall(object.name, object)
+        if name_ok and name and ini_file then
+            local ini_ok, teleport_ini = pcall(ini_file, "sr_teleport_sections.ltx")
+            if ini_ok and teleport_ini and teleport_ini.section_exist then
+                local section_ok, found = pcall(teleport_ini.section_exist, teleport_ini, name)
+                if section_ok and found then section = name end
+            end
+        end
+    end
+
+    restrictor_sections_by_id[restrictor_id] = section or false
+    return section
+end
+
+local function get_raid_level_tier()
+    if not (level and level.name and raid_utils and raid_utils.get_raid_sim) then return nil end
+    local level_ok, level_name = pcall(level.name)
+    if not level_ok or not level_name then return nil end
+
+    local sim_ok, sim = pcall(raid_utils.get_raid_sim, level_name)
+    if not sim_ok or not sim then return nil end
+    local tier = tonumber(sim.level_tier)
+    if not tier then return nil end
+    return clamp(math.floor(tier + 0.5), 1, GRIM_RAID_TIER_COUNT)
+end
+
+local function get_critical_states(tier)
+    local states = {}
+    if db and db.actor then
+        local bleeding = tonumber(db.actor.bleeding) or 0
+        states.droplet = bleeding / 1.7 >= 0.03
+    end
+    if not (raid_utils and raid_utils.calc_travel_time and raid_utils.raid_get_rad_hit) then return states end
+
+    local travel_time_ok, travel_time = pcall(raid_utils.calc_travel_time, tonumber(tier) or 1)
+    if not travel_time_ok then return states end
+    local radiation_ok, radiation_hit = pcall(raid_utils.raid_get_rad_hit, travel_time)
+    if not radiation_ok then return states end
+    radiation_hit = tonumber(radiation_hit) or 0
+
+    states.radiation = radiation_hit >= 0.05 and radiation_hit < 1.0
+    states.skull = radiation_hit >= 1.0
+    return states
+end
+
+local function append_icon_settings(options, icon_name)
+    local prefix = "grim_raid_icon_" .. icon_name
+    local option_prefix = "icon_" .. icon_name
+    local text_prefix = "transition_countdown_" .. prefix
+    for _, definition in ipairs(ICON_SETTING_DEFINITIONS) do
+        local suffix = "_" .. definition.suffix
+        options[#options + 1] = {
+            id = option_prefix .. suffix,
+            type = "track",
+            val = 2,
+            min = definition.min,
+            max = definition.max,
+            step = definition.step,
+            def = definition.default,
+            hint = text_prefix .. suffix,
+        }
+    end
+end
+
+local function append_icon_live_commands(commands, icon_name)
+    local prefix = "grim_raid_icon_" .. icon_name
+    local setting_prefix = "grim_raid/icon_" .. icon_name
+    commands[#commands + 1] = { type = "line" }
+    commands[#commands + 1] = {
+        type = "info",
+        name = "ui_mcm_transition_countdown_" .. prefix .. "_file",
+        value = icon_name .. ".svg",
+    }
+    for _, definition in ipairs(ICON_SETTING_DEFINITIONS) do
+        local suffix = "_" .. definition.suffix
+        local command = {
+            key = setting_prefix .. suffix,
+            name = "ui_mcm_transition_countdown_" .. prefix .. suffix,
+            min = definition.min,
+            max = definition.max,
+            step = definition.step,
+            dp = definition.dp,
+            is_coord = definition.is_coord,
+            is_percent = definition.is_percent,
+            is_scale = definition.is_scale,
+        }
+        commands[#commands + 1] = command
+    end
+end
+
+function M.get_is_grim_raid()
+    if not grim_raid_checked then
+        M.is_grim_raid = detect_grim_raid()
+        grim_raid_checked = true
+    end
+    return M.is_grim_raid
+end
+
+function M.append_defaults(defaults)
+    if not M.get_is_grim_raid() then return end
+    for tier = 1, GRIM_RAID_TIER_COUNT do
+        defaults["grim_raid/tier_" .. tostring(tier) .. "_duration"] = defaults.duration
+    end
+    for _, icon_name in ipairs(GRIM_RAID_ICON_NAMES) do
+        local prefix = "grim_raid/icon_" .. icon_name
+        for _, definition in ipairs(ICON_SETTING_DEFINITIONS) do
+            defaults[prefix .. "_" .. definition.suffix] = definition.default
+        end
+    end
+end
+
+function M.append_mcm_options(options, configure_function, configure_precondition, default_duration)
+    if not M.get_is_grim_raid() then return end
+    local grim_raid_options = {
+        { id = "title", type = "slide", text = "ui_mcm_transition_countdown_grim_raid_title", size = {512, 50}, spacing = 20 },
+        { id = "configure_in_game", type = "button", functor_ui = { configure_function }, precondition = { configure_precondition }, hint = "transition_countdown_configure_in_game" },
+        { id = "divider_ui", type = "line" },
+    }
+    for tier = 1, GRIM_RAID_TIER_COUNT do
+        local option_key = "tier_" .. tostring(tier) .. "_duration"
+        local text_key = "transition_countdown_grim_raid_" .. option_key
+        grim_raid_options[#grim_raid_options + 1] = { id = option_key, type = "track", val = 2, min = 0, max = 60, step = 0.1, prec = 1, def =
+        default_duration, hint = text_key }
+    end
+    for _, icon_name in ipairs(GRIM_RAID_ICON_NAMES) do
+        grim_raid_options[#grim_raid_options + 1] = { id = "divider_ui", type = "line" }
+        append_icon_settings(grim_raid_options, icon_name)
+    end
+    options[#options + 1] = { id = "grim_raid", sh = true, text = "ui_mcm_transition_countdown_grim_raid_title", gr = grim_raid_options }
+end
+
+function M.append_live_commands(commands)
+    if not M.get_is_grim_raid() then return end
+    commands[#commands + 1] = { type = "line" }
+    for tier = 1, GRIM_RAID_TIER_COUNT do
+        local key = "grim_raid/tier_" .. tostring(tier) .. "_duration"
+        local name = "ui_mcm_transition_countdown_grim_raid_tier_" .. tostring(tier) .. "_duration"
+        commands[#commands + 1] = { key = key, name = name, min = 0, max = 60, step = 0.1, dp = 1, is_seconds = true }
+    end
+    for _, icon_name in ipairs(GRIM_RAID_ICON_NAMES) do
+        append_icon_live_commands(commands, icon_name)
+    end
+end
+
+function M.get_countdown_context(wnd, default_duration)
+    if not M.get_is_grim_raid() then return nil end
+    local tier = get_raid_level_tier()
+    if not tier or not get_restrictor_section(wnd) then return nil end
+
+    local duration = get_mcm_number("grim_raid/tier_" .. tostring(tier) .. "_duration", default_duration)
+    return {
+        tier = tier,
+        duration = math.max(0, duration),
+        critical_states = {},
+        critical_state_checked_at = nil,
+    }
+end
+
+function M.get_preview_context(default_duration)
+    if not M.get_is_grim_raid() then return nil end
+    local tier = get_raid_level_tier() or 1
+
+    local duration = get_mcm_number("grim_raid/tier_" .. tostring(tier) .. "_duration", default_duration)
+    return {
+        tier = tier,
+        duration = math.max(0, duration),
+        preview = true,
+        critical_states = {},
+        critical_state_checked_at = nil,
+    }
+end
+
+local function get_icon_window(overlay, icon_name)
+    overlay._grim_raid_icons = overlay._grim_raid_icons or {}
+    local icon = overlay._grim_raid_icons[icon_name]
+    if icon then return icon end
+
+    icon = CUIStatic()
+    overlay:AttachChild(icon)
+    icon:SetAutoDelete(true)
+    icon:SetStretchTexture(true)
+    overlay._grim_raid_icons[icon_name] = icon
+    return icon
+end
+
+local function get_icon_render_state(overlay, icon_name)
+    overlay._grim_raid_icon_render_state = overlay._grim_raid_icon_render_state or {}
+    overlay._grim_raid_icon_render_state[icon_name] = overlay._grim_raid_icon_render_state[icon_name] or {}
+    return overlay._grim_raid_icon_render_state[icon_name]
+end
+
+local function hide_all_icons(overlay)
+    local icons = overlay and overlay._grim_raid_icons
+    if not icons then return end
+    for _, icon in pairs(icons) do
+        icon:Show(false)
+    end
+end
+
+local function register_icon_slots(runtime)
+    if grim_raid_icon_slots_registered then return true end
+    if not (runtime and type(runtime.register_image_slot) == "function") then return false end
+
+    for _, icon_name in ipairs(GRIM_RAID_ICON_NAMES) do
+        local register_ok, registered = pcall(
+            runtime.register_image_slot,
+            "grim_raid_" .. icon_name,
+            GRIM_RAID_ICON_FILE_PREFIX .. icon_name .. "_",
+            GRIM_RAID_ICON_TEXTURE_PREFIX .. icon_name .. "_"
+        )
+        if not register_ok or registered ~= true then return false end
+    end
+    grim_raid_icon_slots_registered = true
+    return true
+end
+
+local function render_icon_to_slot(icon, render_state, entry, slot_key, target_width, target_height, runtime)
+    local call_ok, render_ok, texture_name, texture_width, texture_height = pcall(
+        runtime.render_image,
+        entry,
+        target_width,
+        target_height,
+        nil,
+        slot_key
+    )
+    if not call_ok or render_ok ~= true or not texture_name then return false, nil, nil end
+
+    if render_state.texture_name ~= texture_name then
+        icon:InitTexture(texture_name)
+        icon:SetStretchTexture(true)
+        render_state.texture_name = texture_name
+    end
+    return true, texture_width, texture_height
+end
+
+local function apply_icon_layout(overlay, icon_name, layout, runtime)
+    local icon = get_icon_window(overlay, icon_name)
+    local render_state = get_icon_render_state(overlay, icon_name)
+    local setting_prefix = "grim_raid/icon_" .. icon_name
+    local scale = get_icon_setting(setting_prefix, "scale", true)
+    local height = GRIM_RAID_ICON_BASE_HEIGHT * scale
+    local entry = runtime.get_image_entry(GRIM_RAID_ICON_SOURCE_DIRECTORY .. icon_name .. ".svg")
+    local source_width = entry and tonumber(entry.width) or 0
+    local source_height = entry and tonumber(entry.height) or 0
+
+    local render_height = math.ceil(height)
+    local render_width = render_height
+    if source_width > 0 and source_height > 0 then
+        render_width = math.ceil(height * source_width / source_height)
+    end
+    local current_device = device and device()
+    if current_device and current_device.width and current_device.height then
+        render_width = math.ceil(render_width * current_device.width / 1024)
+        render_height = math.ceil(render_height * current_device.height / 768)
+    end
+    local slot_key = "grim_raid_" .. icon_name
+    local render_ok, width, rendered_height = render_icon_to_slot(icon, render_state, entry, slot_key, render_width, render_height, runtime)
+    if not render_ok or not width or not rendered_height or rendered_height <= 0 then
+        icon:Show(false)
+        return
+    end
+
+    local correction = tonumber(layout.correction) or 1
+    local icon_width = height * width / rendered_height / correction
+    local left = (tonumber(layout.center_x) or 0) + get_icon_setting(setting_prefix, "x", false) - icon_width / 2
+    local top = (tonumber(layout.center_y) or 0) + get_icon_setting(setting_prefix, "y", false) - height / 2
+    icon:SetWndPos(vector2():set(left, top))
+    icon:SetWndSize(vector2():set(icon_width, height))
+    local alpha = get_icon_setting(setting_prefix, "alpha", true)
+    local red = get_icon_setting(setting_prefix, "r", true)
+    local green = get_icon_setting(setting_prefix, "g", true)
+    local blue = get_icon_setting(setting_prefix, "b", true)
+    icon:SetTextureColor(GetARGB(math.floor(alpha * (tonumber(layout.fade) or 1) * 255 / 100 + 0.5), red, green, blue))
+    icon:Show(true)
+end
+
+function M.apply_overlay_layout(overlay, context, layout)
+    if not (context and layout) then
+        hide_all_icons(overlay)
+        return
+    end
+
+    local critical_states = context.critical_states or {}
+    if context.preview then
+        critical_states = { droplet = true, radiation = true, skull = true }
+    else
+        local now = time_global and time_global() or 0
+        local last_check = tonumber(context.critical_state_checked_at)
+        if last_check == nil or now - last_check >= CRITICAL_STATE_REFRESH_MS then
+            context.critical_states = get_critical_states(context.tier)
+            context.critical_state_checked_at = now
+        end
+        critical_states = context.critical_states or {}
+    end
+
+    local runtime = transition_countdown_ttf_and_otf_runtime
+    if not (runtime and runtime.get_image_entry and runtime.render_image) or not register_icon_slots(runtime) then
+        hide_all_icons(overlay)
+        return
+    end
+
+    for _, icon_name in ipairs(GRIM_RAID_ICON_NAMES) do
+        if critical_states[icon_name] then
+            apply_icon_layout(overlay, icon_name, layout, runtime)
+        elseif overlay._grim_raid_icons and overlay._grim_raid_icons[icon_name] then
+            overlay._grim_raid_icons[icon_name]:Show(false)
+        end
+    end
+end

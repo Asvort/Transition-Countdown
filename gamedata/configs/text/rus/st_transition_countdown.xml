@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+    <string id="ui_mcm_menu_transition_countdown"><text>Transition Countdown</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_yes"><text>Да</text></string>
+
+    <string id="ui_mcm_transition_countdown_no"><text>Нет</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_unit_seconds"><text>сек.</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_enabled"><text>Включить мод?</text></string>
+    <string id="ui_mcm_transition_countdown_enabled_desc"><text>Скрывает стандартное подтверждение перехода и автоматически запускает обратный отсчёт.</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_configure_in_game"><text>Настроить в игре</text></string>
+    <string id="ui_mcm_transition_countdown_configure_in_game_desc"><text>Позволяет настроить во время игры.</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_universal_title"><text>Универсальные</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_group_x"><text>[Группа] X:</text></string>
+    <string id="ui_mcm_transition_countdown_group_x_desc"><text>Горизонтальное смещение центра группы от центра экрана.</text></string>
+
+    <string id="ui_mcm_transition_countdown_group_y"><text>[Группа] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_group_y_desc"><text>Вертикальное смещение центра группы от центра экрана.</text></string>
+
+    <string id="ui_mcm_transition_countdown_fade_time"><text>[Группа] Анимация появления:</text></string>
+    <string id="ui_mcm_transition_countdown_fade_time_desc"><text>Время плавного появления.</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_duration"><text>[Таймер] Время:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_duration_desc"><text>Сколько секунд игрок должен оставаться в области до автоматического перехода.</text></string>
+
+    <string id="ui_mcm_transition_countdown_decimals"><text>[Таймер] Десятые доли?</text></string>
+    <string id="ui_mcm_transition_countdown_decimals_desc"><text>[4.9, 4.8..] или [4, 3..]?</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_x"><text>[Таймер] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_x_desc"><text>Горизонтальное смещение таймера от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_y"><text>[Таймер] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_y_desc"><text>Вертикальное смещение таймера от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_font_family"><text>[Таймер] Шрифт:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_font_family_desc"><text>Семейство шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_font_variant"><text>[Таймер] [Шрифт] Стиль:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_font_variant_desc"><text>Файл TTF или OTF из выбранной папки шрифтов.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_size"><text>[Таймер] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_size_desc"><text>Размер шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_r"><text>[Таймер] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_g"><text>[Таймер] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_b"><text>[Таймер] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_alpha"><text>[Таймер] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_image_index"><text>[Изображение] Файл:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_x"><text>[Изображение] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_image_x_desc"><text>Горизонтальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_y"><text>[Изображение] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_image_y_desc"><text>Вертикальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_scale"><text>[Изображение] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_image_scale_desc"><text>Размер изображения.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_r"><text>[Изображение] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_g"><text>[Изображение] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_b"><text>[Изображение] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_alpha"><text>[Изображение] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_index"><text>[Изображение при успехе] Файл:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_index_desc"><text>Изменяет изображение после окончания таймера, пока мод пытается выполнить переход.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_x"><text>[Изображение при успехе] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_x_desc"><text>Горизонтальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_y"><text>[Изображение при успехе] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_y_desc"><text>Вертикальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_scale"><text>[Изображение при успехе] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_scale_desc"><text>Размер изображения.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_r"><text>[Изображение при успехе] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_g"><text>[Изображение при успехе] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_b"><text>[Изображение при успехе] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_alpha"><text>[Изображение при успехе] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_force_key"><text>[Клавиша] Отправиться сейчас:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_x"><text>[Клавиша] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_x_desc"><text>Горизонтальное смещение текста выбранной клавиши от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_y"><text>[Клавиша] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_y_desc"><text>Вертикальное смещение текста выбранной клавиши от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_family"><text>[Клавиша] Шрифт:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_family_desc"><text>Семейство шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_variant"><text>[Клавиша] [Шрифт] Стиль:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_variant_desc"><text>Файл TTF или OTF из выбранной папки шрифтов.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_size"><text>[Клавиша] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_size_desc"><text>Размер шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_r"><text>[Клавиша] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_g"><text>[Клавиша] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_b"><text>[Клавиша] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_alpha"><text>[Клавиша] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1"><text>[Надпись 1] Текст:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_desc"><text>Дополнительная надпись.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_x"><text>[Надпись 1] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_x_desc"><text>Горизонтальное смещение первой дополнительной надписи от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_y"><text>[Надпись 1] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_y_desc"><text>Вертикальное смещение первой дополнительной надписи от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_family"><text>[Надпись 1] Шрифт:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_family_desc"><text>Семейство шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_variant"><text>[Надпись 1] [Шрифт] Стиль:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_variant_desc"><text>Файл TTF или OTF из выбранной папки шрифтов.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_size"><text>[Надпись 1] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_size_desc"><text>Размер шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_r"><text>[Надпись 1] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_g"><text>[Надпись 1] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_b"><text>[Надпись 1] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_alpha"><text>[Надпись 1] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2"><text>[Надпись 2] Текст:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_desc"><text>Дополнительная надпись.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_x"><text>[Надпись 2] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_x_desc"><text>Горизонтальное смещение второй дополнительной надписи от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_y"><text>[Надпись 2] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_y_desc"><text>Вертикальное смещение второй дополнительной надписи от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_family"><text>[Надпись 2] Шрифт:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_family_desc"><text>Семейство шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_variant"><text>[Надпись 2] [Шрифт] Стиль:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_variant_desc"><text>Файл TTF или OTF из выбранной папки шрифтов.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_size"><text>[Надпись 2] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_size_desc"><text>Размер шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_r"><text>[Надпись 2] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_g"><text>[Надпись 2] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_b"><text>[Надпись 2] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_alpha"><text>[Надпись 2] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3"><text>[Надпись 3] Текст:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_desc"><text>Дополнительная надпись.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_x"><text>[Надпись 3] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_x_desc"><text>Горизонтальное смещение третьей дополнительной надписи от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_y"><text>[Надпись 3] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_y_desc"><text>Вертикальное смещение третьей дополнительной надписи от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_family"><text>[Надпись 3] Шрифт:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_family_desc"><text>Семейство шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_variant"><text>[Надпись 3] [Шрифт] Стиль:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_variant_desc"><text>Файл TTF или OTF из выбранной папки шрифтов.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_size"><text>[Надпись 3] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_size_desc"><text>Размер шрифта.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_r"><text>[Надпись 3] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_g"><text>[Надпись 3] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_b"><text>[Надпись 3] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_alpha"><text>[Надпись 3] [Цвет] Прозрачность:</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_title"><text>Рейд во Мрак</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_1_duration"><text>[Таймер] Локация Т1:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_1_duration_desc"><text>Сколько секунд игрок должен оставаться в области до автоматического перехода.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_2_duration"><text>[Таймер] Локация Т2:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_2_duration_desc"><text>Сколько секунд игрок должен оставаться в области до автоматического перехода.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_3_duration"><text>[Таймер] Локация Т3:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_3_duration_desc"><text>Сколько секунд игрок должен оставаться в области до автоматического перехода.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_4_duration"><text>[Таймер] Локация Т4:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_4_duration_desc"><text>Сколько секунд игрок должен оставаться в области до автоматического перехода.</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_file"><text>[Иконка кровотечения] Файл:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_x"><text>[Иконка кровотечения] X:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_x_desc"><text>Горизонтальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_y"><text>[Иконка кровотечения] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_y_desc"><text>Вертикальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_scale"><text>[Иконка кровотечения] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_scale_desc"><text>Размер изображения.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_r"><text>[Иконка кровотечения] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_g"><text>[Иконка кровотечения] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_b"><text>[Иконка кровотечения] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_alpha"><text>[Иконка кровотечения] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_file"><text>[Иконка радиации] Файл:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_x"><text>[Иконка радиации] X:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_x_desc"><text>Горизонтальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_y"><text>[Иконка радиации] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_y_desc"><text>Вертикальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_scale"><text>[Иконка радиации] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_scale_desc"><text>Размер изображения.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_r"><text>[Иконка радиации] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_g"><text>[Иконка радиации] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_b"><text>[Иконка радиации] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_alpha"><text>[Иконка радиации] [Цвет] Прозрачность:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_file"><text>[Иконка гибели] Файл:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_x"><text>[Иконка гибели] X:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_x_desc"><text>Горизонтальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_y"><text>[Иконка гибели] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_y_desc"><text>Вертикальное смещение изображения от центра группы.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_scale"><text>[Иконка гибели] Масштаб:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_scale_desc"><text>Размер изображения.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_r"><text>[Иконка гибели] [Цвет] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_g"><text>[Иконка гибели] [Цвет] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_b"><text>[Иконка гибели] [Цвет] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_alpha"><text>[Иконка гибели] [Цвет] Прозрачность:</text></string>
+</string_table>

@@ -1,0 +1,219 @@
+transition_countdown_user_config = transition_countdown_user_config or {}
+
+local M = transition_countdown_user_config
+local CONFIG_RELATIVE_PATH = "configs\\transition_countdown\\user_config.ltx"
+local FORMAT_VERSION = 2
+
+M.FORMAT_VERSION = FORMAT_VERSION
+
+pcall(require, "transition_countdown_ttf_and_otf_runtime")
+
+local function convert_text(method_name, value)
+    local runtime = transition_countdown_ttf_and_otf_runtime
+    local method = runtime and runtime[method_name]
+    if type(method) == "function" then
+        local convert_ok, converted = pcall(method, value)
+        if convert_ok and type(converted) == "string" then return converted end
+    end
+    return tostring(value or "")
+end
+
+local function engine_text_to_file_text(value)
+    return convert_text("engine_text_to_utf8", value)
+end
+
+local function file_text_to_engine_text(value)
+    return convert_text("utf8_to_engine_text", value)
+end
+
+local function is_tenth_step_setting(key)
+    local key_text = tostring(key or "")
+    return key_text == "duration"
+        or key_text == "fade_time"
+        or string.sub(key_text, -9) == "_duration"
+end
+
+local function normalize_tenth_step(value)
+    local number = tonumber(value)
+    if number == nil then return value end
+    if number >= 0 then return math.floor(number * 10 + 0.5) / 10 end
+    return math.ceil(number * 10 - 0.5) / 10
+end
+
+local function resolve_config_path()
+    local filesystem_ok, filesystem = pcall(function()
+        return getFS and getFS()
+    end)
+    if filesystem_ok and filesystem and filesystem.update_path then
+        local path_ok, path = pcall(filesystem.update_path, filesystem, "$game_data$", CONFIG_RELATIVE_PATH)
+        if path_ok and path and path ~= "" then return path end
+    end
+    return "gamedata\\" .. CONFIG_RELATIVE_PATH
+end
+
+local function get_io_table()
+    local io_ok, io_table = pcall(function() return io end)
+    if io_ok and io_table and type(io_table.open) == "function" then return io_table end
+    return nil
+end
+
+local function read_file(path)
+    local io_table = get_io_table()
+    if not io_table then return nil, "io.open is unavailable" end
+
+    local open_ok, file = pcall(io_table.open, path, "rb")
+    if not open_ok or not file then return nil, "open failed" end
+    local read_ok, contents = pcall(file.read, file, "*a")
+    pcall(file.close, file)
+    if not read_ok or type(contents) ~= "string" then return nil, "read failed" end
+    return contents
+end
+
+local function write_file(path, contents)
+    local io_table = get_io_table()
+    if not io_table then return false, "io.open is unavailable" end
+
+    local open_ok, file = pcall(io_table.open, path, "wb")
+    if not open_ok or not file then return false, "open failed" end
+    local write_ok, write_error = pcall(function()
+        file:write(contents)
+        file:flush()
+    end)
+    pcall(file.close, file)
+    if not write_ok then return false, tostring(write_error) end
+    return true
+end
+
+local function unescape_string(value)
+    local result = {}
+    local index = 1
+    while index <= #value do
+        local character = string.sub(value, index, index)
+        if character == "\\" and index < #value then
+            local escaped = string.sub(value, index + 1, index + 1)
+            if escaped == "n" then
+                result[#result + 1] = "\n"
+            elseif escaped == "r" then
+                result[#result + 1] = "\r"
+            elseif escaped == "t" then
+                result[#result + 1] = "\t"
+            elseif escaped == "\\" or escaped == "\"" then
+                result[#result + 1] = escaped
+            else
+                result[#result + 1] = "\\" .. escaped
+            end
+            index = index + 2
+        else
+            result[#result + 1] = character
+            index = index + 1
+        end
+    end
+    return table.concat(result)
+end
+
+local function parse_value(value)
+    value = tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if #value >= 2 and string.sub(value, 1, 1) == "\"" and string.sub(value, -1) == "\"" then
+        return unescape_string(string.sub(value, 2, -2))
+    end
+    if value == "true" then return true end
+    if value == "false" then return false end
+    local number = tonumber(value)
+    if number ~= nil then return number end
+    return value
+end
+
+local function serialize_value(key, value)
+    if type(value) == "boolean" then return value and "true" or "false" end
+    if type(value) == "number" then
+        if is_tenth_step_setting(key) then
+            local text = string.format("%.1f", normalize_tenth_step(value))
+            return (text:gsub("%.0$", ""))
+        end
+        return string.format("%.15g", value)
+    end
+
+    local text = engine_text_to_file_text(value)
+    text = text:gsub("\\", "\\\\")
+        :gsub("\r", "\\r")
+        :gsub("\n", "\\n")
+        :gsub("\t", "\\t")
+        :gsub("\"", "\\\"")
+    return "\"" .. text .. "\""
+end
+
+local function sorted_keys(values)
+    local keys = {}
+    for key, _ in pairs(values or {}) do keys[#keys + 1] = key end
+    table.sort(keys)
+    return keys
+end
+
+function M.read()
+    local contents, read_error = read_file(resolve_config_path())
+    if not contents then return nil, nil, read_error end
+    if string.sub(contents, 1, 3) == "\239\187\191" then contents = string.sub(contents, 4) end
+    contents = contents:gsub("\r\n", "\n"):gsub("\r", "\n")
+
+    local values = {}
+    local metadata = {}
+    local section = nil
+    for line in string.gmatch(contents .. "\n", "(.-)\n") do
+        local trimmed = line:gsub("^%s+", ""):gsub("%s+$", "")
+        if trimmed ~= "" and string.sub(trimmed, 1, 1) ~= ";" and string.sub(trimmed, 1, 1) ~= "#" then
+            local section_name = string.match(trimmed, "^%[([%w_]+)%]$")
+            if section_name then
+                section = section_name
+            else
+                local key, raw_value = string.match(line, "^%s*([%w_]+)%s*=%s*(.-)%s*$")
+                if key and section == "meta" then
+                    metadata[key] = parse_value(raw_value)
+                elseif key and section then
+                    local value = parse_value(raw_value)
+                    if type(value) == "string" then value = file_text_to_engine_text(value) end
+                    if is_tenth_step_setting(key) then value = normalize_tenth_step(value) end
+                    local full_key = section == "main" and key or section .. "/" .. key
+                    values[full_key] = value
+                end
+            end
+        end
+    end
+    return values, metadata, nil
+end
+
+function M.write(values)
+    local sections = { main = {} }
+    for key, value in pairs(values or {}) do
+        local key_text = tostring(key)
+        local section, section_key = string.match(key_text, "^([%w_]+)/([%w_]+)$")
+        section = section or "main"
+        section_key = section_key or key_text
+        sections[section] = sections[section] or {}
+        sections[section][section_key] = value
+    end
+
+    local lines = {
+        "; Этот файл можно передавать другим пользователям Transition Countdown.",
+        "; Мод автоматически импортирует его при следующем запуске и обновляет после изменения настроек.",
+        "",
+        "[meta]",
+        "format_version = " .. tostring(FORMAT_VERSION),
+        "",
+        "[main]",
+    }
+    for _, key in ipairs(sorted_keys(sections.main)) do
+        lines[#lines + 1] = key .. " = " .. serialize_value(key, sections.main[key])
+    end
+
+    for _, section in ipairs(sorted_keys(sections)) do
+        if section ~= "main" then
+            lines[#lines + 1] = ""
+            lines[#lines + 1] = "[" .. section .. "]"
+            for _, key in ipairs(sorted_keys(sections[section])) do
+                lines[#lines + 1] = key .. " = " .. serialize_value(key, sections[section][key])
+            end
+        end
+    end
+    lines[#lines + 1] = ""
+    return write_file(resolve_config_path(), table.concat(lines, "\r\n"))
+end

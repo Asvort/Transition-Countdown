@@ -1,0 +1,1887 @@
+transition_countdown_ttf_and_otf_runtime = transition_countdown_ttf_and_otf_runtime or {}
+
+local M = transition_countdown_ttf_and_otf_runtime
+
+local TAG = "[Transition Countdown] "
+local FREETYPE_DLL_NAME = "transition_countdown_freetype.dll"
+local IMAGE_DLL_NAME = "transition_countdown_images.dll"
+local DEFAULT_TTF_PATH = "fonts\\Minecraft Rus\\minecraft.ttf"
+local MIN_PIXEL_SIZE = 8
+
+local SLOT_VARIANT_COUNT = 2
+local RENDER_DEBOUNCE_MS = 150
+local TEXTURE_READY_DELAY_MS = 120
+local IMAGE_SOURCE_DIRECTORY = "textures\\ui\\transition_countdown\\img"
+
+local SLOT_DEFS = {
+    image = {
+        file_prefix = "textures\\ui\\transition_countdown\\dynamic\\image_",
+        texture_prefix = "ui\\transition_countdown\\dynamic\\image_",
+    },
+    timer = {
+        file_prefix = "textures\\ui\\transition_countdown\\dynamic\\timer_",
+        texture_prefix = "ui\\transition_countdown\\dynamic\\timer_",
+        canvas_width = 4096,
+        canvas_height = 512,
+        region_width = 2048,
+        region_height = 150,
+        render_pixel_size = 120,
+    },
+    key_send_now = {
+        file_prefix = "textures\\ui\\transition_countdown\\dynamic\\key_send_now_",
+        texture_prefix = "ui\\transition_countdown\\dynamic\\key_send_now_",
+        canvas_width = 8192,
+        canvas_height = 512,
+        region_width = 1560,
+        region_height = 150,
+        render_pixel_size = 120,
+    },
+}
+
+for index = 1, 3 do
+    local slot_name = "custom_label_" .. tostring(index)
+    SLOT_DEFS[slot_name] = {
+        file_prefix = "textures\\ui\\transition_countdown\\dynamic\\" .. slot_name .. "_",
+        texture_prefix = "ui\\transition_countdown\\dynamic\\" .. slot_name .. "_",
+        canvas_width = 8192,
+        canvas_height = 512,
+        region_width = 1860,
+        region_height = 150,
+        render_pixel_size = 120,
+    }
+end
+
+M.slot_state = M.slot_state or {}
+M.font_file_cache = M.font_file_cache or {}
+M._init_attempted = M._init_attempted or false
+M._available = M._available or false
+M._ffi = M._ffi or nil
+M._freetype = M._freetype or nil
+M._kernel32 = M._kernel32 or nil
+M._library = M._library or nil
+M._resolved_default_ttf_path = M._resolved_default_ttf_path or nil
+M._generation_counter = M._generation_counter or 0
+M._font_catalog = M._font_catalog or nil
+M._image_decoder = M._image_decoder or nil
+M._image_available = M._image_available or false
+M._image_catalog = M._image_catalog or nil
+M._image_cache = M._image_cache or {}
+M._image_variant_signatures = M._image_variant_signatures or {}
+
+local function ttf_log(message, ...)
+    local format_ok, text = pcall(function(msg, ...)
+        return string.format(TAG .. tostring(msg), ...)
+    end, message, ...)
+
+    if not format_ok then
+        text = TAG .. tostring(message)
+    end
+
+    local printf_ok, printf_function = pcall(function()
+        return printf
+    end)
+
+    if printf_ok and type(printf_function) == "function" then
+        pcall(printf_function, "%s", text)
+        return
+    end
+
+    local log_ok, log_function = pcall(function()
+        return log
+    end)
+
+    if log_ok and type(log_function) == "function" then
+        pcall(log_function, text)
+    end
+end
+
+local function is_duplicate_cdef_error(error_text)
+    local lowered = string.lower(tostring(error_text or ""))
+    return string.find(lowered, "redefin", 1, true) ~= nil
+        or string.find(lowered, "already defined", 1, true) ~= nil
+        or string.find(lowered, "previous declaration", 1, true) ~= nil
+        or string.find(lowered, "duplicate", 1, true) ~= nil
+end
+
+local function get_io_table()
+    local ok, io_table = pcall(function()
+        return io
+    end)
+
+    if ok and io_table and type(io_table.open) == "function" then
+        return io_table
+    end
+
+    return nil
+end
+
+local function read_binary_file(path)
+    local io_table = get_io_table()
+    if not io_table then return nil, "io.open is unavailable" end
+
+    local open_ok, file_or_error = pcall(function()
+        return io_table.open(path, "rb")
+    end)
+
+    if not open_ok or not file_or_error then
+        return nil, tostring(file_or_error or "open failed")
+    end
+
+    local file = file_or_error
+    local read_ok, data_or_error = pcall(function()
+        return file:read("*a")
+    end)
+
+    pcall(function()
+        file:close()
+    end)
+
+    if not read_ok or type(data_or_error) ~= "string" then
+        return nil, tostring(data_or_error or "read failed")
+    end
+
+    return data_or_error
+end
+
+local function write_binary_file(path, data)
+    local io_table = get_io_table()
+    if not io_table then return false, "io.open is unavailable" end
+
+    local open_ok, file_or_error = pcall(function()
+        return io_table.open(path, "wb")
+    end)
+
+    if not open_ok or not file_or_error then
+        return false, tostring(file_or_error or "open failed")
+    end
+
+    local file = file_or_error
+    local write_ok, write_error = pcall(function()
+        file:write(data)
+        file:flush()
+    end)
+
+    pcall(function()
+        file:close()
+    end)
+
+    if not write_ok then
+        return false, tostring(write_error)
+    end
+
+    return true
+end
+
+local function get_filesystem()
+    local getter_ok, getter = pcall(function()
+        return getFS
+    end)
+
+    if not getter_ok or type(getter) ~= "function" then
+        return nil
+    end
+
+    local fs_ok, filesystem = pcall(getter)
+    if fs_ok then
+        return filesystem
+    end
+
+    return nil
+end
+
+local function resolve_game_data_path(relative_path)
+    local filesystem = get_filesystem()
+    if not filesystem then return nil end
+
+    local method_ok, update_path = pcall(function()
+        return filesystem.update_path
+    end)
+
+    if not method_ok or type(update_path) ~= "function" then
+        return nil
+    end
+
+    local resolve_ok, resolved_path = pcall(function()
+        return filesystem:update_path("$game_data$", relative_path)
+    end)
+
+    if resolve_ok and resolved_path and resolved_path ~= "" then
+        return resolved_path
+    end
+
+    return nil
+end
+
+local function join_windows_path(directory, filename)
+    if not directory or directory == "" then
+        return filename
+    end
+
+    local last = string.sub(directory, -1)
+    if last == "\\" or last == "/" then
+        return directory .. filename
+    end
+
+    return directory .. "\\" .. filename
+end
+
+local function get_directory_name(path)
+    if type(path) ~= "string" then
+        return nil
+    end
+
+    return string.match(path, "^(.*)[\\/][^\\/]+$")
+end
+
+local function declare_kernel32(local_ffi)
+    local find_ok, find_error = pcall(function()
+        local_ffi.cdef([[
+            typedef struct TC_FILETIME_ {
+                unsigned long dwLowDateTime;
+                unsigned long dwHighDateTime;
+            } TC_FILETIME;
+
+            typedef struct TC_WIN32_FIND_DATAA_ {
+                unsigned long dwFileAttributes;
+                TC_FILETIME ftCreationTime;
+                TC_FILETIME ftLastAccessTime;
+                TC_FILETIME ftLastWriteTime;
+                unsigned long nFileSizeHigh;
+                unsigned long nFileSizeLow;
+                unsigned long dwReserved0;
+                unsigned long dwReserved1;
+                char cFileName[260];
+                char cAlternateFileName[14];
+            } TC_WIN32_FIND_DATAA;
+
+            void* __stdcall FindFirstFileA(const char* lpFileName, TC_WIN32_FIND_DATAA* lpFindFileData);
+            int __stdcall FindNextFileA(void* hFindFile, TC_WIN32_FIND_DATAA* lpFindFileData);
+            int __stdcall FindClose(void* hFindFile);
+        ]])
+    end)
+
+    if not find_ok and not is_duplicate_cdef_error(find_error) then
+        ttf_log("directory ffi.cdef FAILED: %s", tostring(find_error))
+        return false
+    end
+
+    local module_ok, module_error = pcall(function()
+        local_ffi.cdef([[
+            unsigned long __stdcall GetModuleFileNameA(void* hModule, char* lpFilename, unsigned long nSize);
+        ]])
+    end)
+
+    if not module_ok and not is_duplicate_cdef_error(module_error) then
+        ttf_log("GetModuleFileNameA ffi.cdef FAILED: %s", tostring(module_error))
+        return false
+    end
+
+    return true
+end
+
+local function load_kernel32(local_ffi)
+    local load_ok, library_or_error = pcall(function()
+        return local_ffi.load("kernel32")
+    end)
+    if load_ok and library_or_error then return library_or_error end
+
+    local fallback_ok, fallback_or_error = pcall(function()
+        return local_ffi.load("kernel32.dll")
+    end)
+    if fallback_ok and fallback_or_error then return fallback_or_error end
+
+    ttf_log("ffi.load('kernel32') FAILED: %s; fallback FAILED: %s", tostring(library_or_error), tostring(fallback_or_error))
+    return nil
+end
+
+local function get_executable_path(local_ffi, kernel32)
+    local buffer_size = 32768
+    local buffer_ok, buffer_or_error = pcall(function()
+        return local_ffi.new("char[?]", buffer_size)
+    end)
+    if not buffer_ok or not buffer_or_error then return nil end
+
+    local call_ok, length_or_error = pcall(function()
+        return kernel32.GetModuleFileNameA(nil, buffer_or_error, buffer_size)
+    end)
+    if not call_ok then return nil end
+
+    local length = tonumber(length_or_error) or 0
+    if length <= 0 then return nil end
+
+    local string_ok, executable_path = pcall(function()
+        return local_ffi.string(buffer_or_error, length)
+    end)
+    if not string_ok or not executable_path or executable_path == "" then return nil end
+
+    return executable_path
+end
+
+local function declare_freetype(local_ffi)
+    local cdef_ok, cdef_error = pcall(function()
+        local_ffi.cdef([[
+            typedef signed char        TC_FT_Char;
+            typedef unsigned char      TC_FT_Byte;
+            typedef signed short       TC_FT_Short;
+            typedef unsigned short     TC_FT_UShort;
+            typedef signed int         TC_FT_Int;
+            typedef unsigned int       TC_FT_UInt;
+            typedef signed long        TC_FT_Long;
+            typedef unsigned long      TC_FT_ULong;
+            typedef signed long        TC_FT_Fixed;
+            typedef signed long        TC_FT_Pos;
+            typedef signed int         TC_FT_Int32;
+            typedef signed int         TC_FT_Error;
+            typedef char               TC_FT_String;
+
+            typedef struct TC_FT_LibraryRec_*   TC_FT_Library;
+            typedef struct TC_FT_FaceRec_*      TC_FT_Face;
+            typedef struct TC_FT_SizeRec_*      TC_FT_Size;
+            typedef struct TC_FT_CharMapRec_*   TC_FT_CharMap;
+            typedef struct TC_FT_GlyphSlotRec_* TC_FT_GlyphSlot;
+
+            typedef void (*TC_FT_Generic_Finalizer)(void* object);
+
+            typedef struct TC_FT_Generic_ {
+                void* data;
+                TC_FT_Generic_Finalizer finalizer;
+            } TC_FT_Generic;
+
+            typedef struct TC_FT_Vector_ {
+                TC_FT_Pos x;
+                TC_FT_Pos y;
+            } TC_FT_Vector;
+
+            typedef struct TC_FT_BBox_ {
+                TC_FT_Pos xMin;
+                TC_FT_Pos yMin;
+                TC_FT_Pos xMax;
+                TC_FT_Pos yMax;
+            } TC_FT_BBox;
+
+            typedef struct TC_FT_Glyph_Metrics_ {
+                TC_FT_Pos width;
+                TC_FT_Pos height;
+                TC_FT_Pos horiBearingX;
+                TC_FT_Pos horiBearingY;
+                TC_FT_Pos horiAdvance;
+                TC_FT_Pos vertBearingX;
+                TC_FT_Pos vertBearingY;
+                TC_FT_Pos vertAdvance;
+            } TC_FT_Glyph_Metrics;
+
+            typedef struct TC_FT_Bitmap_ {
+                unsigned int rows;
+                unsigned int width;
+                int pitch;
+                unsigned char* buffer;
+                unsigned short num_grays;
+                unsigned char pixel_mode;
+                unsigned char palette_mode;
+                void* palette;
+            } TC_FT_Bitmap;
+
+            typedef unsigned int TC_FT_Glyph_Format;
+
+            typedef struct TC_FT_GlyphSlotRec_ {
+                TC_FT_Library library;
+                TC_FT_Face face;
+                TC_FT_GlyphSlot next;
+                TC_FT_UInt glyph_index;
+                TC_FT_Generic generic;
+                TC_FT_Glyph_Metrics metrics;
+                TC_FT_Fixed linearHoriAdvance;
+                TC_FT_Fixed linearVertAdvance;
+                TC_FT_Vector advance;
+                TC_FT_Glyph_Format format;
+                TC_FT_Bitmap bitmap;
+                TC_FT_Int bitmap_left;
+                TC_FT_Int bitmap_top;
+            } TC_FT_GlyphSlotRec;
+
+            typedef struct TC_FT_Bitmap_Size_ {
+                TC_FT_Short height;
+                TC_FT_Short width;
+                TC_FT_Pos size;
+                TC_FT_Pos x_ppem;
+                TC_FT_Pos y_ppem;
+            } TC_FT_Bitmap_Size;
+
+            typedef struct TC_FT_FaceRec_ {
+                TC_FT_Long num_faces;
+                TC_FT_Long face_index;
+                TC_FT_Long face_flags;
+                TC_FT_Long style_flags;
+                TC_FT_Long num_glyphs;
+                TC_FT_String* family_name;
+                TC_FT_String* style_name;
+                TC_FT_Int num_fixed_sizes;
+                TC_FT_Bitmap_Size* available_sizes;
+                TC_FT_Int num_charmaps;
+                TC_FT_CharMap* charmaps;
+                TC_FT_Generic generic;
+                TC_FT_BBox bbox;
+                TC_FT_UShort units_per_EM;
+                TC_FT_Short ascender;
+                TC_FT_Short descender;
+                TC_FT_Short height;
+                TC_FT_Short max_advance_width;
+                TC_FT_Short max_advance_height;
+                TC_FT_Short underline_position;
+                TC_FT_Short underline_thickness;
+                TC_FT_GlyphSlot glyph;
+                TC_FT_Size size;
+                TC_FT_CharMap charmap;
+            } TC_FT_FaceRec;
+
+            TC_FT_Error FT_Init_FreeType(TC_FT_Library* alibrary);
+            TC_FT_Error FT_Done_FreeType(TC_FT_Library library);
+            TC_FT_Error FT_New_Memory_Face(TC_FT_Library library, const TC_FT_Byte* file_base, TC_FT_Long file_size, TC_FT_Long face_index, TC_FT_Face* aface);
+            TC_FT_Error FT_Done_Face(TC_FT_Face face);
+            TC_FT_Error FT_Select_Charmap(TC_FT_Face face, unsigned int encoding);
+            TC_FT_UInt FT_Get_Char_Index(TC_FT_Face face, TC_FT_ULong charcode);
+            TC_FT_Error FT_Set_Pixel_Sizes(TC_FT_Face face, TC_FT_UInt pixel_width, TC_FT_UInt pixel_height);
+            TC_FT_Error FT_Load_Char(TC_FT_Face face, TC_FT_ULong char_code, TC_FT_Int32 load_flags);
+        ]])
+    end)
+
+    if cdef_ok or is_duplicate_cdef_error(cdef_error) then
+        return true
+    end
+
+    ttf_log("FreeType ffi.cdef FAILED: %s", tostring(cdef_error))
+    return false
+end
+
+local function declare_image_decoder(local_ffi)
+    local cdef_ok, cdef_error = pcall(function()
+        local_ffi.cdef([[
+            int tc_image_probe(const char* path, unsigned int* width, unsigned int* height, unsigned int* kind);
+            int tc_image_decode(
+                const char* path,
+                unsigned int target_width,
+                unsigned int target_height,
+                unsigned char** pixels,
+                size_t* length,
+                unsigned int* width,
+                unsigned int* height
+            );
+            void tc_image_free(unsigned char* pixels, size_t length);
+        ]])
+    end)
+
+    if cdef_ok or is_duplicate_cdef_error(cdef_error) then
+        return true
+    end
+
+    ttf_log("Image decoder ffi.cdef FAILED: %s", tostring(cdef_error))
+    return false
+end
+
+local function load_sibling_library(local_ffi, executable_directory, filename)
+    local full_path = join_windows_path(executable_directory, filename)
+    local load_ok, library_or_error = pcall(function()
+        return local_ffi.load(full_path)
+    end)
+    if load_ok and library_or_error then return library_or_error, full_path end
+
+    local fallback_ok, fallback_or_error = pcall(function()
+        return local_ffi.load(filename)
+    end)
+    if fallback_ok and fallback_or_error then return fallback_or_error, filename end
+
+    return nil, tostring(library_or_error) .. " / " .. tostring(fallback_or_error)
+end
+
+local function get_resolved_default_ttf_path()
+    if M._resolved_default_ttf_path then return M._resolved_default_ttf_path end
+    local resolved = resolve_game_data_path(DEFAULT_TTF_PATH) or ("gamedata\\" .. DEFAULT_TTF_PATH)
+    M._resolved_default_ttf_path = resolved
+    return resolved
+end
+
+local function resolve_family_ttf_path(family, variant_index)
+    if family then
+        if family.variants and #family.variants > 0 then
+            local index = math.floor((tonumber(variant_index) or 0) + 0.5) + 1
+            if index < 1 then index = 1 end
+            if index > #family.variants then index = #family.variants end
+            local variant = family.variants[index]
+            local relative_path = variant and (variant.ttf_path or variant.relative_path)
+            if relative_path then
+                return resolve_game_data_path(relative_path) or ("gamedata\\" .. relative_path)
+            end
+        end
+
+        if family.ttf_path then
+            return resolve_game_data_path(family.ttf_path) or ("gamedata\\" .. family.ttf_path)
+        end
+    end
+
+    return get_resolved_default_ttf_path()
+end
+
+local function u32le(value)
+    local number = tonumber(value) or 0
+    number = number % 4294967296
+
+    local b1 = number % 256
+    number = math.floor(number / 256)
+    local b2 = number % 256
+    number = math.floor(number / 256)
+    local b3 = number % 256
+    number = math.floor(number / 256)
+    local b4 = number % 256
+
+    return string.char(b1, b2, b3, b4)
+end
+
+local function build_bgra8_dds(local_ffi, width, height, pixels)
+    local DDSD_CAPS = 0x00000001
+    local DDSD_HEIGHT = 0x00000002
+    local DDSD_WIDTH = 0x00000004
+    local DDSD_PITCH = 0x00000008
+    local DDSD_PIXELFORMAT = 0x00001000
+    local DDPF_ALPHAPIXELS = 0x00000001
+    local DDPF_RGB = 0x00000040
+    local DDSCAPS_TEXTURE = 0x00001000
+
+    local header = {
+        "DDS ",
+        u32le(124),
+        u32le(DDSD_CAPS + DDSD_HEIGHT + DDSD_WIDTH + DDSD_PITCH + DDSD_PIXELFORMAT),
+        u32le(height),
+        u32le(width),
+        u32le(width * 4),
+        u32le(0),
+        u32le(0),
+        string.rep(u32le(0), 11),
+        u32le(32),
+        u32le(DDPF_ALPHAPIXELS + DDPF_RGB),
+        u32le(0),
+        u32le(32),
+        u32le(0x00FF0000),
+        u32le(0x0000FF00),
+        u32le(0x000000FF),
+        u32le(0xFF000000),
+        u32le(DDSCAPS_TEXTURE),
+        u32le(0),
+        u32le(0),
+        u32le(0),
+        u32le(0),
+    }
+
+    local header_string = table.concat(header)
+    local pixel_count = width * height * 4
+    local pixel_string_ok, pixel_string_or_error = pcall(function()
+        return local_ffi.string(pixels, pixel_count)
+    end)
+
+    if not pixel_string_ok then
+        return nil, tostring(pixel_string_or_error)
+    end
+
+    return header_string .. pixel_string_or_error
+end
+
+local CP1251_TO_UNICODE = {
+    [0x80] = 0x0402, [0x81] = 0x0403, [0x82] = 0x201A, [0x83] = 0x0453,
+    [0x84] = 0x201E, [0x85] = 0x2026, [0x86] = 0x2020, [0x87] = 0x2021,
+    [0x88] = 0x20AC, [0x89] = 0x2030, [0x8A] = 0x0409, [0x8B] = 0x2039,
+    [0x8C] = 0x040A, [0x8D] = 0x040C, [0x8E] = 0x040B, [0x8F] = 0x040F,
+    [0x90] = 0x0452, [0x91] = 0x2018, [0x92] = 0x2019, [0x93] = 0x201C,
+    [0x94] = 0x201D, [0x95] = 0x2022, [0x96] = 0x2013, [0x97] = 0x2014,
+    [0x98] = 0x003F, [0x99] = 0x2122, [0x9A] = 0x0459, [0x9B] = 0x203A,
+    [0x9C] = 0x045A, [0x9D] = 0x045C, [0x9E] = 0x045B, [0x9F] = 0x045F,
+    [0xA0] = 0x00A0, [0xA1] = 0x040E, [0xA2] = 0x045E, [0xA3] = 0x0408,
+    [0xA4] = 0x00A4, [0xA5] = 0x0490, [0xA6] = 0x00A6, [0xA7] = 0x00A7,
+    [0xA8] = 0x0401, [0xA9] = 0x00A9, [0xAA] = 0x0404, [0xAB] = 0x00AB,
+    [0xAC] = 0x00AC, [0xAD] = 0x00AD, [0xAE] = 0x00AE, [0xAF] = 0x0407,
+    [0xB0] = 0x00B0, [0xB1] = 0x00B1, [0xB2] = 0x0406, [0xB3] = 0x0456,
+    [0xB4] = 0x0491, [0xB5] = 0x00B5, [0xB6] = 0x00B6, [0xB7] = 0x00B7,
+    [0xB8] = 0x0451, [0xB9] = 0x2116, [0xBA] = 0x0454, [0xBB] = 0x00BB,
+    [0xBC] = 0x0458, [0xBD] = 0x0405, [0xBE] = 0x0455, [0xBF] = 0x0457,
+}
+
+for byte = 0xC0, 0xFF do
+    CP1251_TO_UNICODE[byte] = 0x0410 + (byte - 0xC0)
+end
+
+local UNICODE_TO_CP1251 = {}
+for byte = 0, 0x7F do UNICODE_TO_CP1251[byte] = byte end
+for byte, codepoint in pairs(CP1251_TO_UNICODE) do
+    if UNICODE_TO_CP1251[codepoint] == nil then UNICODE_TO_CP1251[codepoint] = byte end
+end
+
+local function decode_utf8_strict(text)
+    local result = {}
+    local i = 1
+    local length = #text
+
+    while i <= length do
+        local b1 = string.byte(text, i)
+        if not b1 then return nil end
+
+        local codepoint = nil
+        local bytes = 1
+
+        if b1 < 0x80 then
+            codepoint = b1
+        elseif b1 >= 0xC2 and b1 <= 0xDF then
+            local b2 = string.byte(text, i + 1)
+            if not (b2 and b2 >= 0x80 and b2 <= 0xBF) then return nil end
+            codepoint = (b1 - 0xC0) * 0x40 + (b2 - 0x80)
+            bytes = 2
+        elseif b1 >= 0xE0 and b1 <= 0xEF then
+            local b2 = string.byte(text, i + 1)
+            local b3 = string.byte(text, i + 2)
+            if not (b2 and b3 and b2 >= 0x80 and b2 <= 0xBF and b3 >= 0x80 and b3 <= 0xBF) then return nil end
+            if b1 == 0xE0 and b2 < 0xA0 then return nil end
+            if b1 == 0xED and b2 > 0x9F then return nil end
+            codepoint = (b1 - 0xE0) * 0x1000 + (b2 - 0x80) * 0x40 + (b3 - 0x80)
+            bytes = 3
+        elseif b1 >= 0xF0 and b1 <= 0xF4 then
+            local b2 = string.byte(text, i + 1)
+            local b3 = string.byte(text, i + 2)
+            local b4 = string.byte(text, i + 3)
+            if not (b2 and b3 and b4 and b2 >= 0x80 and b2 <= 0xBF and b3 >= 0x80 and b3 <= 0xBF and b4 >= 0x80 and b4 <= 0xBF) then return nil end
+            if b1 == 0xF0 and b2 < 0x90 then return nil end
+            if b1 == 0xF4 and b2 > 0x8F then return nil end
+            codepoint = (b1 - 0xF0) * 0x40000 + (b2 - 0x80) * 0x1000 + (b3 - 0x80) * 0x40 + (b4 - 0x80)
+            bytes = 4
+        else
+            return nil
+        end
+
+        result[#result + 1] = codepoint
+        i = i + bytes
+    end
+
+    return result
+end
+
+local function decode_cp1251(text)
+    local result = {}
+    for index = 1, #text do
+        local byte = string.byte(text, index)
+        if byte < 0x80 then
+            result[#result + 1] = byte
+        else
+            result[#result + 1] = CP1251_TO_UNICODE[byte] or 0x003F
+        end
+    end
+    return result
+end
+
+local function encode_utf8(codepoint)
+    if codepoint < 0x80 then return string.char(codepoint) end
+    if codepoint < 0x800 then
+        return string.char(0xC0 + math.floor(codepoint / 0x40), 0x80 + (codepoint % 0x40))
+    end
+    if codepoint < 0x10000 then
+        return string.char(
+            0xE0 + math.floor(codepoint / 0x1000),
+            0x80 + (math.floor(codepoint / 0x40) % 0x40),
+            0x80 + (codepoint % 0x40)
+        )
+    end
+    return string.char(
+        0xF0 + math.floor(codepoint / 0x40000),
+        0x80 + (math.floor(codepoint / 0x1000) % 0x40),
+        0x80 + (math.floor(codepoint / 0x40) % 0x40),
+        0x80 + (codepoint % 0x40)
+    )
+end
+
+function M.engine_text_to_utf8(value)
+    local text = tostring(value or "")
+    if decode_utf8_strict(text) then return text end
+
+    local result = {}
+    for _, codepoint in ipairs(decode_cp1251(text)) do
+        result[#result + 1] = encode_utf8(codepoint)
+    end
+    return table.concat(result)
+end
+
+function M.utf8_to_engine_text(value)
+    local text = tostring(value or "")
+    local codepoints = decode_utf8_strict(text)
+    if not codepoints then return text end
+
+    local result = {}
+    for _, codepoint in ipairs(codepoints) do
+        local byte = UNICODE_TO_CP1251[codepoint]
+        if byte == nil then return text end
+        result[#result + 1] = string.char(byte)
+    end
+    return table.concat(result)
+end
+
+local function text_to_codepoints(text)
+    if type(text) ~= "string" then return {} end
+
+    local utf8 = decode_utf8_strict(text)
+    if utf8 then
+        return utf8, "utf8"
+    end
+
+    return decode_cp1251(text), "cp1251"
+end
+
+local function get_bitmap_alpha(bitmap, x, y)
+    local width = tonumber(bitmap.width) or 0
+    local rows = tonumber(bitmap.rows) or 0
+    local pitch = tonumber(bitmap.pitch) or 0
+    local pixel_mode = tonumber(bitmap.pixel_mode) or 0
+
+    if x < 0 or x >= width or y < 0 or y >= rows or pitch == 0 then return 0 end
+
+    local row_pointer = bitmap.buffer + y * pitch
+
+    if pixel_mode == 2 then
+        local value = tonumber(row_pointer[x]) or 0
+        local levels = tonumber(bitmap.num_grays) or 256
+        if levels > 1 and levels ~= 256 then
+            value = math.floor((value * 255) / (levels - 1) + 0.5)
+        end
+        return math.max(0, math.min(255, value))
+    end
+
+    if pixel_mode == 1 then
+        local byte_value = tonumber(row_pointer[math.floor(x / 8)]) or 0
+        local divisor = 2 ^ (7 - (x % 8))
+        return (math.floor(byte_value / divisor) % 2 == 1) and 255 or 0
+    end
+
+    if pixel_mode == 3 then
+        local byte_value = tonumber(row_pointer[math.floor(x / 4)]) or 0
+        local divisor = 2 ^ (6 - 2 * (x % 4))
+        return (math.floor(byte_value / divisor) % 4) * 85
+    end
+
+    if pixel_mode == 4 then
+        local byte_value = tonumber(row_pointer[math.floor(x / 2)]) or 0
+        local divisor = 2 ^ (4 - 4 * (x % 2))
+        return (math.floor(byte_value / divisor) % 16) * 17
+    end
+
+    if pixel_mode == 7 then
+        return tonumber(row_pointer[x * 4 + 3]) or 0
+    end
+
+    return 0
+end
+
+local function set_canvas_pixel(canvas, width, x, y, b, g, r, a)
+    local offset = (y * width + x) * 4
+    canvas[offset + 0] = b
+    canvas[offset + 1] = g
+    canvas[offset + 2] = r
+    canvas[offset + 3] = a
+end
+
+local function blit_bitmap(canvas, canvas_width, canvas_height, bitmap, bitmap_width, bitmap_rows, origin_x, origin_y, blue, green, red, alpha_scale)
+    for y = 0, bitmap_rows - 1 do
+        local target_y = origin_y + y
+        if target_y >= 0 and target_y < canvas_height then
+            for x = 0, bitmap_width - 1 do
+                local target_x = origin_x + x
+                if target_x >= 0 and target_x < canvas_width then
+                    local alpha = get_bitmap_alpha(bitmap, x, y)
+                    if alpha > 0 then
+                        local final_alpha = math.floor(alpha * (alpha_scale or 255) / 255 + 0.5)
+                        set_canvas_pixel(canvas, canvas_width, target_x, target_y, blue, green, red, final_alpha)
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function load_glyph_metrics(freetype, face, codepoint)
+    local FT_LOAD_RENDER = 4
+    local load_ok, load_result = pcall(function()
+        return freetype.FT_Load_Char(face, codepoint, FT_LOAD_RENDER)
+    end)
+    if not load_ok then return nil, tostring(load_result) end
+
+    local load_error = tonumber(load_result) or -1
+    if load_error ~= 0 then return nil, load_error end
+
+    local slot = face.glyph
+    if slot == nil then return nil, "glyph slot is nil" end
+
+    local bitmap = slot.bitmap
+    return {
+        codepoint = codepoint,
+        width = tonumber(bitmap.width) or 0,
+        rows = tonumber(bitmap.rows) or 0,
+        left = tonumber(slot.bitmap_left) or 0,
+        top = tonumber(slot.bitmap_top) or 0,
+        advance_x = (tonumber(slot.advance.x) or 0) / 64,
+    }
+end
+
+local function get_uniform_glyph_gap(pixel_size)
+    return math.max(1, math.floor((tonumber(pixel_size) or 1) * 0.08 + 0.5))
+end
+
+local function build_layout(freetype, face, codepoints, glyph_gap)
+    local glyphs = {}
+    local cursor_x = 0
+    local min_x = nil
+    local max_x = nil
+    local min_y = nil
+    local max_y = nil
+    glyph_gap = math.max(0, tonumber(glyph_gap) or 0)
+
+    for index = 1, #codepoints do
+        local metrics, metrics_error = load_glyph_metrics(freetype, face, codepoints[index])
+        if not metrics then return nil, metrics_error end
+
+        local logical_width = math.max(1, math.floor(metrics.advance_x + 0.5))
+        local draw_x = cursor_x + metrics.left
+
+        glyphs[#glyphs + 1] = {
+            codepoint = metrics.codepoint,
+            draw_x = draw_x,
+            left = metrics.left,
+            top = metrics.top,
+            width = metrics.width,
+            rows = metrics.rows,
+            logical_width = logical_width,
+        }
+
+        if metrics.width > 0 and metrics.rows > 0 then
+            local glyph_min_x = draw_x
+            local glyph_max_x = draw_x + metrics.width
+            local glyph_min_y = -metrics.top
+            local glyph_max_y = glyph_min_y + metrics.rows
+            if min_x == nil or glyph_min_x < min_x then min_x = glyph_min_x end
+            if max_x == nil or glyph_max_x > max_x then max_x = glyph_max_x end
+            if min_y == nil or glyph_min_y < min_y then min_y = glyph_min_y end
+            if max_y == nil or glyph_max_y > max_y then max_y = glyph_max_y end
+        end
+
+        cursor_x = cursor_x + logical_width
+        if index < #codepoints then
+            cursor_x = cursor_x + glyph_gap
+        end
+    end
+
+    if min_y == nil then
+        min_x = 0
+        max_x = 1
+        min_y = 0
+        max_y = 1
+    end
+
+    min_x = min_x or 0
+    max_x = max_x or math.max(1, cursor_x)
+
+    return {
+        glyphs = glyphs,
+        min_x = min_x,
+        min_y = min_y,
+        max_x = max_x,
+        max_y = max_y,
+        content_width = math.max(1, math.ceil(max_x - min_x)),
+        content_height = math.max(1, math.ceil(max_y - min_y)),
+        gap = glyph_gap,
+    }
+end
+
+local function render_layout_to_canvas(local_ffi, freetype, face, layout, canvas_width, canvas_height, region_width, region_height, color)
+    local canvas_bytes = canvas_width * canvas_height * 4
+    local allocate_ok, canvas_or_error = pcall(function()
+        return local_ffi.new("unsigned char[?]", canvas_bytes)
+    end)
+    if not allocate_ok or not canvas_or_error then
+        return nil, tostring(canvas_or_error)
+    end
+
+    local canvas = canvas_or_error
+    for pixel_index = 0, canvas_width * canvas_height - 1 do
+        local offset = pixel_index * 4
+        canvas[offset + 0] = 255
+        canvas[offset + 1] = 255
+        canvas[offset + 2] = 255
+        canvas[offset + 3] = 0
+    end
+
+    region_width = math.max(1, math.min(canvas_width, tonumber(region_width) or canvas_width))
+    region_height = math.max(1, math.min(canvas_height, tonumber(region_height) or canvas_height))
+    local shift_x = math.floor((region_width - layout.content_width) / 2 - layout.min_x + 0.5)
+    local shift_y = math.floor((region_height - layout.content_height) / 2 - layout.min_y + 0.5)
+    local FT_LOAD_RENDER = 4
+
+    for _, glyph in ipairs(layout.glyphs) do
+        local load_ok, load_result = pcall(function()
+            return freetype.FT_Load_Char(face, glyph.codepoint, FT_LOAD_RENDER)
+        end)
+        if not load_ok then return nil, tostring(load_result) end
+
+        local load_error = tonumber(load_result) or -1
+        if load_error ~= 0 then return nil, tostring(load_error) end
+
+        local slot = face.glyph
+        if slot == nil then return nil, "glyph slot is nil during render" end
+        local bitmap = slot.bitmap
+        local bitmap_width = tonumber(bitmap.width) or 0
+        local bitmap_rows = tonumber(bitmap.rows) or 0
+
+        if bitmap_width > 0 and bitmap_rows > 0 then
+            local origin_x = shift_x + glyph.draw_x
+            local origin_y = shift_y - (tonumber(slot.bitmap_top) or glyph.top)
+            blit_bitmap(
+                canvas,
+                canvas_width,
+                canvas_height,
+                bitmap,
+                bitmap_width,
+                bitmap_rows,
+                origin_x,
+                origin_y,
+                color.b or 255,
+                color.g or 255,
+                color.r or 255,
+                color.a or 255
+            )
+        end
+    end
+
+    return canvas
+end
+
+local function get_font_bytes(path)
+    local cached = M.font_file_cache[path]
+    if cached then return cached.data, cached.size end
+
+    local data, error_text = read_binary_file(path)
+    if not data then return nil, error_text end
+
+    cached = { data = data, size = #data }
+    M.font_file_cache[path] = cached
+    return cached.data, cached.size
+end
+
+
+local function get_slot_texture_name(slot_key, variant_index)
+    local slot = SLOT_DEFS[slot_key]
+    if not slot then return nil end
+    local index = math.max(0, math.min(SLOT_VARIANT_COUNT - 1, tonumber(variant_index) or 0))
+    return slot.texture_prefix .. string.format("%d", index)
+end
+
+local function get_slot_file_path(slot_key, variant_index)
+    local slot = SLOT_DEFS[slot_key]
+    if not slot then return nil end
+    local index = math.max(0, math.min(SLOT_VARIANT_COUNT - 1, tonumber(variant_index) or 0))
+    local relative_path = slot.file_prefix .. string.format("%d.dds", index)
+    return resolve_game_data_path(relative_path) or ("gamedata\\" .. relative_path)
+end
+
+function M.is_ready()
+    if M._init_attempted then return M._available end
+    M._init_attempted = true
+
+    local ok_load, local_ffi = pcall(function()
+        return require("ffi")
+    end)
+    if not ok_load or not local_ffi then
+        ttf_log("FFI unavailable: %s", tostring(local_ffi))
+        M._available = false
+        return false
+    end
+
+    if not declare_kernel32(local_ffi) then
+        M._available = false
+        return false
+    end
+
+    local kernel32 = load_kernel32(local_ffi)
+    if not kernel32 then
+        M._available = false
+        return false
+    end
+
+    if not declare_freetype(local_ffi) then
+        M._available = false
+        return false
+    end
+
+    local executable_path = get_executable_path(local_ffi, kernel32)
+    if not executable_path then
+        ttf_log("Unable to resolve executable path")
+        M._available = false
+        return false
+    end
+
+    local executable_directory = get_directory_name(executable_path) or ""
+    local freetype_or_error, dll_full_path = load_sibling_library(local_ffi, executable_directory, FREETYPE_DLL_NAME)
+    if not freetype_or_error then
+        ttf_log("FreeType DLL load failed: %s", tostring(dll_full_path))
+        M._available = false
+        return false
+    end
+
+    local library_array = local_ffi.new("TC_FT_Library[1]")
+    if library_array == nil then
+        ttf_log("FT_Init_FreeType failed: library allocation returned nil")
+        M._available = false
+        return false
+    end
+
+    local init_ok, init_result = pcall(function()
+        return freetype_or_error.FT_Init_FreeType(library_array)
+    end)
+
+    if not init_ok or tonumber(init_result) ~= 0 or library_array[0] == nil then
+        ttf_log("FT_Init_FreeType failed: %s", tostring(init_result))
+        M._available = false
+        return false
+    end
+
+    M._ffi = local_ffi
+    M._kernel32 = kernel32
+    M._freetype = freetype_or_error
+    M._library = library_array[0]
+    M._available = true
+
+    if declare_image_decoder(local_ffi) then
+        local image_decoder, image_path_or_error = load_sibling_library(local_ffi, executable_directory, IMAGE_DLL_NAME)
+        if image_decoder then
+            M._image_decoder = image_decoder
+            M._image_available = true
+            ttf_log("Image decoder initialized: %s", tostring(image_path_or_error))
+        else
+            ttf_log("Image decoder unavailable: %s", tostring(image_path_or_error))
+        end
+    end
+
+    ttf_log("Runtime initialized: %s", tostring(dll_full_path))
+    return true
+end
+
+function M.register_image_slot(slot_key, file_prefix, texture_prefix)
+    slot_key = tostring(slot_key or "")
+    file_prefix = tostring(file_prefix or "")
+    texture_prefix = tostring(texture_prefix or "")
+    if slot_key == "" or file_prefix == "" or texture_prefix == "" then return false end
+
+    local existing = SLOT_DEFS[slot_key]
+    if existing then
+        return existing.file_prefix == file_prefix and existing.texture_prefix == texture_prefix
+    end
+    SLOT_DEFS[slot_key] = {
+        file_prefix = file_prefix,
+        texture_prefix = texture_prefix,
+    }
+    return true
+end
+
+local function sortable_name(value)
+    if type(value) == "table" then
+        local named = rawget(value, "name")
+        if named ~= nil then return tostring(named) end
+    end
+    return tostring(value or "")
+end
+
+local function case_insensitive_sort(a, b)
+    local name_a = sortable_name(a)
+    local name_b = sortable_name(b)
+    local lower_a = string.lower(name_a)
+    local lower_b = string.lower(name_b)
+    if lower_a == lower_b then
+        return name_a < name_b
+    end
+    return lower_a < lower_b
+end
+
+local function enumerate_directory(path)
+    local ffi = M._ffi
+    local kernel32 = M._kernel32
+    if not ffi or not kernel32 or type(path) ~= "string" or path == "" then return {} end
+
+    local find_data = ffi.new("TC_WIN32_FIND_DATAA[1]")
+    if find_data == nil then return {} end
+
+    local search_path = join_windows_path(path, "*")
+    local handle = kernel32.FindFirstFileA(search_path, find_data)
+    local invalid_handle = ffi.cast("void*", -1)
+    if handle == nil or handle == invalid_handle then return {} end
+
+    local entries = {}
+    local FILE_ATTRIBUTE_DIRECTORY = 0x10
+    while true do
+        local name = ffi.string(find_data[0].cFileName)
+        if name ~= "." and name ~= ".." then
+            local attributes = tonumber(find_data[0].dwFileAttributes) or 0
+            entries[#entries + 1] = {
+                name = name,
+                is_directory = math.floor(attributes / FILE_ATTRIBUTE_DIRECTORY) % 2 == 1,
+            }
+        end
+
+        local next_ok = kernel32.FindNextFileA(handle, find_data)
+        if tonumber(next_ok) == 0 then break end
+    end
+
+    kernel32.FindClose(handle)
+    return entries
+end
+
+local function is_font_filename(name)
+    local lower = string.lower(tostring(name or ""))
+    return string.sub(lower, -4) == ".ttf" or string.sub(lower, -4) == ".otf"
+end
+
+local function size_level_scale(index)
+    index = math.max(20, math.min(300, math.floor((tonumber(index) or 100) + 0.5)))
+    return index / 100
+end
+
+local function create_size_levels()
+    local sizes = {}
+    for index = 1, 300 do
+        sizes[index] = { scale = size_level_scale(index) }
+    end
+    return sizes
+end
+
+function M.get_font_catalog(force_refresh)
+    if M._font_catalog and not force_refresh then return M._font_catalog end
+    if not M.is_ready() then return {} end
+
+    local fonts_root = resolve_game_data_path("fonts") or "gamedata\\fonts"
+    local catalog = {}
+    local folders = enumerate_directory(fonts_root)
+
+    for _, folder in ipairs(folders) do
+        if folder.is_directory then
+            local variants = {}
+            local folder_path = join_windows_path(fonts_root, folder.name)
+            local files = enumerate_directory(folder_path)
+            for _, file in ipairs(files) do
+                if not file.is_directory and is_font_filename(file.name) then
+                    variants[#variants + 1] = {
+                        name = file.name,
+                        ttf_path = "fonts\\" .. folder.name .. "\\" .. file.name,
+                    }
+                end
+            end
+
+            if #variants > 0 then
+                table.sort(variants, case_insensitive_sort)
+                catalog[#catalog + 1] = {
+                    name = folder.name,
+                    folder_name = folder.name,
+                    mode = "runtime_ttf",
+                    sizes = create_size_levels(),
+                    variants = variants,
+                }
+            end
+        end
+    end
+
+    table.sort(catalog, case_insensitive_sort)
+    if #catalog == 0 then
+        local default_path = get_resolved_default_ttf_path()
+        local default_data = read_binary_file(default_path)
+        if default_data then
+            catalog[1] = {
+                name = "Minecraft Rus",
+                folder_name = "Minecraft Rus",
+                mode = "runtime_ttf",
+                sizes = create_size_levels(),
+                variants = {
+                    { name = "minecraft.ttf", ttf_path = DEFAULT_TTF_PATH },
+                },
+            }
+            ttf_log("Font catalog fallback activated: %s", tostring(default_path))
+        end
+    end
+    M._font_catalog = catalog
+    ttf_log("Font catalog scanned: root=%s families=%d", tostring(fonts_root), #catalog)
+    for _, family in ipairs(catalog) do
+        ttf_log("Font family: %s variants=%d", tostring(family.name), #family.variants)
+    end
+    return catalog
+end
+
+local function get_slot_state(slot_key)
+    local state = M.slot_state[slot_key]
+    if state then return state end
+
+    state = {
+        next_variant = -1,
+        active = nil,
+        pending = nil,
+        request_signature = nil,
+        request_since = 0,
+    }
+    M.slot_state[slot_key] = state
+    return state
+end
+
+local function next_variant(state)
+    if type(state) ~= "table" then return 0 end
+    local value = (tonumber(rawget(state, "next_variant")) or -1) + 1
+    if value >= SLOT_VARIANT_COUNT then value = 0 end
+    rawset(state, "next_variant", value)
+    return value
+end
+
+local SUPPORTED_IMAGE_EXTENSIONS = {
+    bmp = true,
+    gif = true,
+    ico = true,
+    jpeg = true,
+    jpg = true,
+    png = true,
+    pnm = true,
+    qoi = true,
+    svg = true,
+    tga = true,
+    tif = true,
+    tiff = true,
+    webp = true,
+}
+
+local function image_extension(name)
+    local extension = string.match(string.lower(tostring(name or "")), "%.([^.]+)$")
+    if extension and SUPPORTED_IMAGE_EXTENSIONS[extension] then return extension end
+    return nil
+end
+
+local function probe_image(path)
+    local ffi = M._ffi
+    local decoder = M._image_decoder
+    if not ffi or not decoder then return nil end
+
+    local width = ffi.new("unsigned int[1]")
+    local height = ffi.new("unsigned int[1]")
+    local kind = ffi.new("unsigned int[1]")
+    if not width or not height or not kind then return nil end
+
+    local probe_function = decoder.tc_image_probe
+    if not probe_function then return nil end
+    local call_ok, result = pcall(probe_function, path, width, height, kind)
+    if not call_ok or tonumber(result) ~= 0 then return nil end
+
+    local image_width = tonumber(width[0]) or 0
+    local image_height = tonumber(height[0]) or 0
+    if image_width <= 0 or image_height <= 0 then return nil end
+    return image_width, image_height, tonumber(kind[0]) == 2
+end
+
+local function is_image_ready()
+    M.is_ready()
+    return M._image_available == true and M._image_decoder ~= nil
+end
+
+function M.get_image_catalog(force_refresh)
+    if M._image_catalog and not force_refresh then return M._image_catalog end
+    if not M.is_ready() then return {} end
+
+    local image_root = resolve_game_data_path(IMAGE_SOURCE_DIRECTORY) or ("gamedata\\" .. IMAGE_SOURCE_DIRECTORY)
+    local catalog = {}
+    for _, file in ipairs(enumerate_directory(image_root)) do
+        local extension = not file.is_directory and image_extension(file.name) or nil
+        if extension then
+            local source_path = join_windows_path(image_root, file.name)
+            local width, height, probed_svg = probe_image(source_path)
+            catalog[#catalog + 1] = {
+                name = file.name,
+                filename = file.name,
+                source_path = source_path,
+                width = width,
+                height = height,
+                is_svg = extension == "svg" or probed_svg == true,
+                mode = "runtime_image",
+            }
+            if not width or not height then
+                ttf_log("Image catalog entry added without probe dimensions: %s", tostring(source_path))
+            end
+        end
+    end
+
+    table.sort(catalog, case_insensitive_sort)
+    M._image_catalog = catalog
+    ttf_log("Image catalog scanned: root=%s images=%d", tostring(image_root), #catalog)
+    return catalog
+end
+
+function M.get_image_entry(relative_path)
+    local path = tostring(relative_path or "")
+    if path == "" or not image_extension(path) then return nil end
+
+    local source_path = resolve_game_data_path(path) or ("gamedata\\" .. path)
+    local width, height, probed_svg = probe_image(source_path)
+    return {
+        name = path,
+        source_path = source_path,
+        width = width,
+        height = height,
+        is_svg = image_extension(path) == "svg" or probed_svg == true,
+        mode = "runtime_image",
+    }
+end
+
+function M.render_image(entry, target_width, target_height, avoid_texture_name, slot_key)
+    if not is_image_ready() or type(entry) ~= "table" then return false, nil end
+
+    slot_key = SLOT_DEFS[slot_key] and slot_key or "image"
+
+    local source_path = rawget(entry, "source_path")
+    if type(source_path) ~= "string" or source_path == "" then return false, nil end
+
+    local is_svg = rawget(entry, "is_svg") == true
+    local requested_width = tonumber(target_width) or 0
+    local requested_height = tonumber(target_height) or 0
+    local render_width = is_svg and requested_width > 0 and math.max(1, math.floor(requested_width + 0.5)) or 0
+    local render_height = is_svg and requested_height > 0 and math.max(1, math.floor(requested_height + 0.5)) or 0
+    local signature = table.concat({ slot_key, source_path, tostring(render_width), tostring(render_height) }, "|")
+    avoid_texture_name = type(avoid_texture_name) == "string" and avoid_texture_name or nil
+    local cached = M._image_cache[signature]
+    if cached and cached.texture_name ~= avoid_texture_name then
+        return true, cached.texture_name, cached.width, cached.height
+    end
+
+    local ffi = M._ffi
+    local decoder = M._image_decoder
+    if not ffi or not decoder then return false, nil end
+
+    local pixels = ffi.new("unsigned char*[1]")
+    local length = ffi.new("size_t[1]")
+    local width = ffi.new("unsigned int[1]")
+    local height = ffi.new("unsigned int[1]")
+    if not pixels or not length or not width or not height then return false, nil end
+
+    local decode_function = decoder.tc_image_decode
+    local free_function = decoder.tc_image_free
+    if not decode_function or not free_function then return false, nil end
+
+    local call_ok, result = pcall(
+        decode_function,
+        source_path,
+        render_width,
+        render_height,
+        pixels,
+        length,
+        width,
+        height
+    )
+    local decoded_pixels = pixels[0]
+    if not call_ok or tonumber(result) ~= 0 or decoded_pixels == nil then
+        if decoded_pixels ~= nil then
+            pcall(free_function, decoded_pixels, length[0])
+        end
+        ttf_log("Image render failed: source=%s result=%s", tostring(source_path), tostring(result))
+        return false, nil
+    end
+
+    local image_width = tonumber(width[0]) or 0
+    local image_height = tonumber(height[0]) or 0
+    local decoded_length = length[0]
+    local image_length = tonumber(decoded_length) or 0
+    local dds_data, dds_error
+    if image_width > 0 and image_height > 0 and image_length == image_width * image_height * 4 then
+        dds_data, dds_error = build_bgra8_dds(ffi, image_width, image_height, decoded_pixels)
+    else
+        dds_error = "invalid decoded dimensions"
+    end
+    pcall(free_function, decoded_pixels, decoded_length)
+    if not dds_data then
+        ttf_log("Image DDS build failed: source=%s error=%s", tostring(source_path), tostring(dds_error))
+        return false, nil
+    end
+
+    local state = get_slot_state(slot_key)
+    local variant = next_variant(state)
+    local texture_name = get_slot_texture_name(slot_key, variant)
+    if avoid_texture_name and texture_name == avoid_texture_name then
+        variant = next_variant(state)
+        texture_name = get_slot_texture_name(slot_key, variant)
+    end
+
+    local variant_key = slot_key .. ":" .. tostring(variant)
+    local old_signature = M._image_variant_signatures[variant_key]
+    if old_signature then M._image_cache[old_signature] = nil end
+
+    local output_path = get_slot_file_path(slot_key, variant)
+    if not output_path or not texture_name then return false, nil end
+    local write_ok, write_error = write_binary_file(output_path, dds_data)
+    if not write_ok then
+        ttf_log("Image DDS write failed: path=%s error=%s", tostring(output_path), tostring(write_error))
+        return false, nil
+    end
+
+    rawset(entry, "width", image_width)
+    rawset(entry, "height", image_height)
+    local rendered = {
+        texture_name = texture_name,
+        width = image_width,
+        height = image_height,
+    }
+    M._image_variant_signatures[variant_key] = signature
+    M._image_cache[signature] = rendered
+    return true, rendered.texture_name, rendered.width, rendered.height
+end
+
+function M.can_render_family(family, variant_index)
+    return M.is_ready() and resolve_family_ttf_path(family, variant_index) ~= nil
+end
+
+
+local function current_time_ms()
+    return time_global and time_global() or 0
+end
+
+local function entry_signature(entry)
+    if type(entry) ~= "table" then return nil end
+    return rawget(entry, "signature")
+end
+
+local function active_result(state)
+    local active = type(state) == "table" and rawget(state, "active") or nil
+    if type(active) ~= "table" then return false, nil end
+    return true,
+        rawget(active, "texture_name"),
+        rawget(active, "region_width"),
+        rawget(active, "region_height"),
+        rawget(active, "generation"),
+        rawget(active, "meta")
+end
+
+local function promote_pending(state, desired_signature, now)
+    if type(state) ~= "table" then return end
+    local pending = rawget(state, "pending")
+    if type(pending) ~= "table" then return end
+
+    local ready_time = tonumber(rawget(pending, "ready_time")) or 0
+    if entry_signature(pending) ~= desired_signature then
+        if now >= ready_time then
+            state.pending = nil
+        end
+        return
+    end
+
+    if now >= ready_time then
+        state.active = pending
+        state.pending = nil
+    end
+end
+
+local function open_face(font_path)
+    local font_data, font_error = get_font_bytes(font_path)
+    if not font_data then return nil, font_error end
+
+    local ffi = M._ffi
+    local freetype = M._freetype
+    local library = M._library
+    if not ffi or not freetype or library == nil then
+        return nil, "FreeType runtime is not initialized"
+    end
+
+    local font_buffer = ffi.new("TC_FT_Byte[?]", #font_data)
+    if font_buffer == nil then return nil, "font buffer allocation returned nil" end
+    ffi.copy(font_buffer, font_data, #font_data)
+
+    local face_array = ffi.new("TC_FT_Face[1]")
+    if face_array == nil then return nil, "face array allocation returned nil" end
+    local result = freetype.FT_New_Memory_Face(library, font_buffer, #font_data, 0, face_array)
+    if tonumber(result) ~= 0 or face_array[0] == nil then
+        return nil, "FT_New_Memory_Face=" .. tostring(result)
+    end
+
+    local face = face_array[0]
+    pcall(function()
+        freetype.FT_Select_Charmap(face, 0x756E6963)
+    end)
+
+    return {
+        face = face,
+        buffer = font_buffer,
+    }, nil
+end
+
+local function close_face(context)
+    if type(context) ~= "table" then return end
+    local face = rawget(context, "face")
+    local freetype = M._freetype
+    if face ~= nil and freetype then
+        pcall(function() freetype.FT_Done_Face(face) end)
+    end
+    context.face = nil
+    context.buffer = nil
+end
+
+local function allocate_blank_canvas(width, height)
+    local ffi = M._ffi
+    if not ffi then return nil end
+    local byte_count = width * height * 4
+    local canvas = ffi.new("unsigned char[?]", byte_count)
+    if canvas == nil then return nil end
+
+    local blank = string.rep("\255\255\255\0", width * height)
+    ffi.copy(canvas, blank, byte_count)
+    return canvas
+end
+
+local function next_power_of_two(value, minimum, maximum)
+    local target = math.max(1, math.floor((tonumber(value) or 1) + 0.5))
+    local result = math.max(1, tonumber(minimum) or 1)
+    while result < target do
+        result = result * 2
+    end
+    local limit = tonumber(maximum)
+    if limit and result > limit then result = limit end
+    return result
+end
+
+local function get_render_metrics(slot, request)
+    local percent = math.floor((tonumber(rawget(request, "size_percent")) or 100) + 0.5)
+    if percent < 20 then percent = 20 end
+    if percent > 300 then percent = 300 end
+
+    local scale = percent / 100
+    local canvas_width = tonumber(rawget(slot, "canvas_width")) or 0
+    local canvas_height = tonumber(rawget(slot, "canvas_height")) or 0
+    local base_region_width = tonumber(rawget(slot, "region_width")) or canvas_width
+    local base_region_height = tonumber(rawget(slot, "region_height")) or canvas_height
+    local base_pixel_size = tonumber(rawget(slot, "render_pixel_size")) or 120
+
+    return {
+        percent = percent,
+        scale = scale,
+        pixel_size = math.max(MIN_PIXEL_SIZE, math.floor(base_pixel_size * scale + 0.5)),
+        region_width = math.max(1, math.min(canvas_width, math.floor(base_region_width * scale + 0.5))),
+        region_height = math.max(1, math.min(canvas_height, math.floor(base_region_height * scale + 0.5))),
+    }
+end
+
+local function render_timer_atlas(slot, face, render_metrics)
+    local freetype = M._freetype
+    if not freetype or face == nil or type(slot) ~= "table" then
+        return nil, nil, "FreeType runtime is not initialized"
+    end
+    local charset = "0123456789.-"
+    local count = string.len(charset)
+    local max_canvas_width = tonumber(rawget(slot, "canvas_width")) or 0
+    local max_canvas_height = tonumber(rawget(slot, "canvas_height")) or 0
+    local region_height = math.max(1, math.min(max_canvas_height, tonumber(rawget(render_metrics, "region_height")) or max_canvas_height))
+    local pixel_size = math.max(MIN_PIXEL_SIZE, tonumber(rawget(render_metrics, "pixel_size")) or tonumber(rawget(slot, "render_pixel_size")) or 120)
+    if max_canvas_width <= 0 or max_canvas_height <= 0 then
+        return nil, nil, "invalid timer canvas size"
+    end
+    local FT_LOAD_RENDER = 4
+    local glyph_gap = get_uniform_glyph_gap(pixel_size)
+    local atlas_padding = 4
+
+    local size_result = freetype.FT_Set_Pixel_Sizes(face, 0, pixel_size)
+    if tonumber(size_result) ~= 0 then
+        return nil, nil, "FT_Set_Pixel_Sizes=" .. tostring(size_result)
+    end
+
+    local max_top = 0
+    local max_bottom = 0
+    local glyph_metrics_list = {}
+    local packed_width = atlas_padding
+
+    for index = 1, count do
+        local code = string.byte(charset, index)
+        local glyph_metrics, metrics_error = load_glyph_metrics(freetype, face, code)
+        if not glyph_metrics then
+            return nil, nil, "glyph metrics=" .. tostring(metrics_error)
+        end
+
+        local bitmap_width = math.max(1, tonumber(rawget(glyph_metrics, "width")) or 0)
+        local bitmap_rows = tonumber(rawget(glyph_metrics, "rows")) or 0
+        local top = tonumber(rawget(glyph_metrics, "top")) or 0
+        max_top = math.max(max_top, top)
+        max_bottom = math.max(max_bottom, bitmap_rows - top)
+        glyph_metrics_list[index] = { code = code, width = bitmap_width }
+        packed_width = packed_width + bitmap_width
+        if index < count then packed_width = packed_width + glyph_gap end
+    end
+
+    packed_width = packed_width + atlas_padding
+    if packed_width > max_canvas_width then
+        return nil, nil, string.format("timer atlas overflow: %d > %d", packed_width, max_canvas_width)
+    end
+
+    local canvas_width = next_power_of_two(packed_width, 64, max_canvas_width)
+    local canvas_height = next_power_of_two(region_height, 64, max_canvas_height)
+    local line_height = math.max(1, max_top + max_bottom)
+    local baseline_y = math.floor((region_height - line_height) / 2 + max_top + 0.5)
+    local canvas = allocate_blank_canvas(canvas_width, canvas_height)
+    if not canvas then return nil, nil, "canvas allocation failed" end
+    local coords = {}
+    local cursor_x = atlas_padding
+
+    for index = 1, count do
+        local item = glyph_metrics_list[index]
+        if type(item) ~= "table" then return nil, nil, "timer atlas metrics are missing" end
+        local item_code = tonumber(rawget(item, "code"))
+        if item_code == nil then return nil, nil, "timer atlas codepoint is missing" end
+        local result = freetype.FT_Load_Char(face, item_code, FT_LOAD_RENDER)
+        if tonumber(result) ~= 0 then
+            return nil, nil, "FT_Load_Char=" .. tostring(result)
+        end
+
+        local glyph = face.glyph
+        if glyph == nil then return nil, nil, "glyph slot is nil" end
+        local bitmap = glyph.bitmap
+        local bitmap_width = math.max(1, tonumber(bitmap.width) or 0)
+        local bitmap_rows = tonumber(bitmap.rows) or 0
+        local origin_x = cursor_x
+        local origin_y = baseline_y - (tonumber(glyph.bitmap_top) or 0)
+
+        blit_bitmap(canvas, canvas_width, canvas_height, bitmap, bitmap_width, bitmap_rows, origin_x, origin_y, 255, 255, 255, 255)
+
+        coords[item.code] = {
+            x1 = cursor_x,
+            y1 = 0,
+            x2 = cursor_x + bitmap_width,
+            y2 = region_height,
+            width = bitmap_width,
+            height = region_height,
+        }
+        cursor_x = cursor_x + bitmap_width + glyph_gap
+    end
+
+    return canvas, {
+        coords = coords,
+        gap = glyph_gap,
+        cell_height = region_height,
+        charset = charset,
+        pixel_size = pixel_size,
+        size_percent = tonumber(rawget(render_metrics, "percent")) or 100,
+        region_width = canvas_width,
+        region_height = region_height,
+        canvas_width = canvas_width,
+        canvas_height = canvas_height,
+    }, nil
+end
+
+local function render_text_image(slot, face, text, metrics)
+    local ffi = M._ffi
+    local freetype = M._freetype
+    if not ffi or not freetype or face == nil or type(slot) ~= "table" then
+        return nil, nil, "FreeType runtime is not initialized"
+    end
+    local codepoints, text_encoding = text_to_codepoints(text)
+    if #codepoints == 0 then return nil, nil, "empty text" end
+
+    local max_canvas_width = tonumber(rawget(slot, "canvas_width")) or 0
+    local max_canvas_height = tonumber(rawget(slot, "canvas_height")) or 0
+    local region_width = tonumber(rawget(metrics, "region_width")) or tonumber(rawget(slot, "region_width")) or max_canvas_width
+    local region_height = tonumber(rawget(metrics, "region_height")) or tonumber(rawget(slot, "region_height")) or max_canvas_height
+    if max_canvas_width <= 0 or max_canvas_height <= 0 or region_width <= 0 or region_height <= 0 then
+        return nil, nil, "invalid text canvas size"
+    end
+    local canvas_width = next_power_of_two(region_width, 64, max_canvas_width)
+    local canvas_height = next_power_of_two(region_height, 64, max_canvas_height)
+    local padding = math.max(4, math.floor(region_height * 0.06 + 0.5))
+    local max_inner_w = math.max(4, region_width - padding * 2)
+    local max_inner_h = math.max(4, region_height - padding * 2)
+    local pixel_size = math.max(MIN_PIXEL_SIZE, tonumber(rawget(metrics, "pixel_size")) or tonumber(rawget(slot, "render_pixel_size")) or 120)
+    local layout = nil
+
+    for _ = 1, 8 do
+        local size_result = freetype.FT_Set_Pixel_Sizes(face, 0, pixel_size)
+        if tonumber(size_result) ~= 0 then
+            return nil, nil, "FT_Set_Pixel_Sizes=" .. tostring(size_result)
+        end
+
+        local glyph_gap = get_uniform_glyph_gap(pixel_size)
+        local layout_result, layout_error = build_layout(freetype, face, codepoints, glyph_gap)
+        if not layout_result then return nil, nil, tostring(layout_error) end
+        layout = layout_result
+
+        if layout.content_width <= max_inner_w and layout.content_height <= max_inner_h then
+            break
+        end
+
+        local fit_scale = math.min(max_inner_w / layout.content_width, max_inner_h / layout.content_height)
+        local next_size = math.floor(pixel_size * math.max(0.2, math.min(0.95, fit_scale * 0.96)) + 0.5)
+        if next_size >= pixel_size then next_size = pixel_size - 1 end
+        if next_size < MIN_PIXEL_SIZE then next_size = MIN_PIXEL_SIZE end
+        if next_size == pixel_size then break end
+        pixel_size = next_size
+    end
+
+    if not layout then return nil, nil, "layout unavailable" end
+
+    local canvas, render_error = render_layout_to_canvas(
+        ffi,
+        freetype,
+        face,
+        layout,
+        canvas_width,
+        canvas_height,
+        region_width,
+        region_height,
+        { r = 255, g = 255, b = 255, a = 255 }
+    )
+    if not canvas then return nil, nil, tostring(render_error) end
+
+    return canvas, {
+        content_width = layout.content_width,
+        content_height = layout.content_height,
+        gap = layout.gap,
+        encoding = text_encoding,
+        pixel_size = pixel_size,
+        size_percent = tonumber(rawget(metrics, "percent")) or 100,
+        region_width = region_width,
+        region_height = region_height,
+        canvas_width = canvas_width,
+        canvas_height = canvas_height,
+    }, nil
+end
+
+local function build_signature(slot_key, request, font_path)
+    local mode = tostring(rawget(request, "mode") or "text")
+    local family_name = ""
+    local family = rawget(request, "family")
+    if type(family) == "table" then
+        family_name = tostring(rawget(family, "name") or "")
+    end
+    local parts = {
+        tostring(slot_key),
+        mode,
+        tostring(font_path),
+        family_name,
+        tostring(rawget(request, "variant_index") or 0),
+        tostring(rawget(request, "size_percent") or 100),
+    }
+
+    if mode ~= "timer_atlas" then
+        parts[#parts + 1] = tostring(rawget(request, "text") or "")
+    end
+
+    return table.concat(parts, "|")
+end
+
+local function write_new_variant(slot_key, slot, state, signature, request, font_path, now)
+    local face_context, face_error = open_face(font_path)
+    if not face_context then
+        ttf_log("Face open failed: slot=%s error=%s", tostring(slot_key), tostring(face_error))
+        return false
+    end
+
+    local face = rawget(face_context, "face")
+    if face == nil then
+        close_face(face_context)
+        ttf_log("Face open failed: slot=%s error=face is nil", tostring(slot_key))
+        return false
+    end
+
+    local metrics = get_render_metrics(slot, request)
+    local canvas, meta, render_error
+    if rawget(request, "mode") == "timer_atlas" then
+        canvas, meta, render_error = render_timer_atlas(slot, face, metrics)
+    else
+        canvas, meta, render_error = render_text_image(slot, face, tostring(rawget(request, "text") or ""), metrics)
+    end
+
+    close_face(face_context)
+    if not canvas then
+        ttf_log("Render failed: slot=%s error=%s", tostring(slot_key), tostring(render_error))
+        return false
+    end
+
+    local ffi = M._ffi
+    if not ffi then
+        ttf_log("DDS build failed: slot=%s error=FFI unavailable", tostring(slot_key))
+        return false
+    end
+    local canvas_width = tonumber(meta and rawget(meta, "canvas_width")) or tonumber(rawget(slot, "canvas_width")) or 0
+    local canvas_height = tonumber(meta and rawget(meta, "canvas_height")) or tonumber(rawget(slot, "canvas_height")) or 0
+    local dds_data, dds_error = build_bgra8_dds(ffi, canvas_width, canvas_height, canvas)
+    if not dds_data then
+        ttf_log("DDS build failed: slot=%s error=%s", tostring(slot_key), tostring(dds_error))
+        return false
+    end
+
+    local variant = next_variant(state)
+    local output_path = get_slot_file_path(slot_key, variant)
+    local texture_name = get_slot_texture_name(slot_key, variant)
+    local write_ok, write_error = write_binary_file(output_path, dds_data)
+    if not write_ok then
+        ttf_log("DDS write failed: slot=%s path=%s error=%s", tostring(slot_key), tostring(output_path), tostring(write_error))
+        return false
+    end
+
+    M._generation_counter = (M._generation_counter or 0) + 1
+    state.pending = {
+        signature = signature,
+        texture_name = texture_name,
+        file_path = output_path,
+        region_width = tonumber(meta and rawget(meta, "region_width")) or tonumber(rawget(slot, "region_width")) or tonumber(rawget(slot, "canvas_width")) or 0,
+        region_height = tonumber(meta and rawget(meta, "region_height")) or tonumber(rawget(slot, "region_height")) or tonumber(rawget(slot, "canvas_height")) or 0,
+        generation = M._generation_counter,
+        meta = meta,
+        ready_time = now + TEXTURE_READY_DELAY_MS,
+        variant = variant,
+    }
+    state.request_signature = nil
+    state.request_since = 0
+
+    ttf_log(
+        "Render complete: slot=%s mode=%s encoding=%s size=%s%% pixel_size=%s variant=%d texture=%s generation=%d",
+        tostring(slot_key),
+        tostring(rawget(request, "mode") or "text"),
+        tostring(meta and meta.encoding or "n/a"),
+        tostring(meta and meta.size_percent or 100),
+        tostring(meta and meta.pixel_size or "n/a"),
+        variant,
+        tostring(texture_name),
+        M._generation_counter
+    )
+    return true
+end
+
+function M.render_slot(slot_key, request)
+    if not M.is_ready() then return false, nil end
+
+    local slot = SLOT_DEFS[slot_key]
+    if type(slot) ~= "table" or type(request) ~= "table" then return false, nil end
+    local mode = rawget(request, "mode")
+    local text_value = rawget(request, "text")
+    if mode ~= "timer_atlas" and (text_value == nil or text_value == "") then
+        return false, nil
+    end
+
+    local font_path = resolve_family_ttf_path(rawget(request, "family"), rawget(request, "variant_index"))
+    if not font_path then return false, nil end
+
+    local state = get_slot_state(slot_key)
+    local now = current_time_ms()
+    local signature = build_signature(slot_key, request, font_path)
+    promote_pending(state, signature, now)
+
+    if entry_signature(rawget(state, "active")) == signature then
+        return active_result(state)
+    end
+
+    if entry_signature(rawget(state, "pending")) == signature then
+        return active_result(state)
+    end
+
+    if rawget(state, "request_signature") ~= signature then
+        state.request_signature = signature
+        state.request_since = now
+        return active_result(state)
+    end
+
+    if now - (tonumber(rawget(state, "request_since")) or now) < RENDER_DEBOUNCE_MS then
+        return active_result(state)
+    end
+
+    write_new_variant(slot_key, slot, state, signature, request, font_path, now)
+    return active_result(state)
+end

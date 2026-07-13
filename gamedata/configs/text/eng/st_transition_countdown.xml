@@ -1,0 +1,290 @@
+﻿<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+    <string id="ui_mcm_menu_transition_countdown"><text>Transition Countdown</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_yes"><text>Yes</text></string>
+
+    <string id="ui_mcm_transition_countdown_no"><text>No</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_unit_seconds"><text>sec.</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_enabled"><text>Enable mod?</text></string>
+    <string id="ui_mcm_transition_countdown_enabled_desc"><text>Hides the standard transition confirmation and starts the countdown automatically.</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_configure_in_game"><text>Configure in game</text></string>
+    <string id="ui_mcm_transition_countdown_configure_in_game_desc"><text>Allows configuration during gameplay.</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_universal_title"><text>Universal</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_group_x"><text>[Group] X:</text></string>
+    <string id="ui_mcm_transition_countdown_group_x_desc"><text>Horizontal offset of the group center from the screen center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_group_y"><text>[Group] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_group_y_desc"><text>Vertical offset of the group center from the screen center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_fade_time"><text>[Group] Fade-in animation:</text></string>
+    <string id="ui_mcm_transition_countdown_fade_time_desc"><text>Fade-in time.</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_duration"><text>[Timer] Time:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_duration_desc"><text>How many seconds the player must remain in the area before the automatic transition.</text></string>
+
+    <string id="ui_mcm_transition_countdown_decimals"><text>[Timer] Tenths?</text></string>
+    <string id="ui_mcm_transition_countdown_decimals_desc"><text>[4.9, 4.8..] or [4, 3..]?</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_x"><text>[Timer] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_x_desc"><text>Horizontal offset of the timer from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_y"><text>[Timer] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_y_desc"><text>Vertical offset of the timer from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_font_family"><text>[Timer] Font:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_font_family_desc"><text>Font family.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_font_variant"><text>[Timer] [Font] Style:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_font_variant_desc"><text>TTF or OTF file from the selected font folder.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_size"><text>[Timer] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_timer_size_desc"><text>Font size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_r"><text>[Timer] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_g"><text>[Timer] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_b"><text>[Timer] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_timer_alpha"><text>[Timer] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_image_index"><text>[Image] File:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_x"><text>[Image] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_image_x_desc"><text>Horizontal offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_y"><text>[Image] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_image_y_desc"><text>Vertical offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_scale"><text>[Image] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_image_scale_desc"><text>Image size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_r"><text>[Image] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_g"><text>[Image] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_b"><text>[Image] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_image_alpha"><text>[Image] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_index"><text>[Success image] File:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_index_desc"><text>Changes the image after the timer ends while the mod attempts the transition.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_x"><text>[Success image] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_x_desc"><text>Horizontal offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_y"><text>[Success image] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_y_desc"><text>Vertical offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_scale"><text>[Success image] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_success_image_scale_desc"><text>Image size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_r"><text>[Success image] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_g"><text>[Success image] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_b"><text>[Success image] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_success_image_alpha"><text>[Success image] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_force_key"><text>[Key] Go now:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_x"><text>[Key] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_x_desc"><text>Horizontal offset of the selected key text from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_y"><text>[Key] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_y_desc"><text>Vertical offset of the selected key text from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_family"><text>[Key] Font:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_family_desc"><text>Font family.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_variant"><text>[Key] [Font] Style:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_font_variant_desc"><text>TTF or OTF file from the selected font folder.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_size"><text>[Key] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_size_desc"><text>Font size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_r"><text>[Key] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_g"><text>[Key] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_b"><text>[Key] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_key_send_now_alpha"><text>[Key] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1"><text>[Label 1] Text:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_desc"><text>Additional label.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_x"><text>[Label 1] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_x_desc"><text>Horizontal offset of the first additional label from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_y"><text>[Label 1] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_y_desc"><text>Vertical offset of the first additional label from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_family"><text>[Label 1] Font:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_family_desc"><text>Font family.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_variant"><text>[Label 1] [Font] Style:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_font_variant_desc"><text>TTF or OTF file from the selected font folder.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_size"><text>[Label 1] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_size_desc"><text>Font size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_r"><text>[Label 1] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_g"><text>[Label 1] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_b"><text>[Label 1] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_1_alpha"><text>[Label 1] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2"><text>[Label 2] Text:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_desc"><text>Additional label.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_x"><text>[Label 2] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_x_desc"><text>Horizontal offset of the second additional label from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_y"><text>[Label 2] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_y_desc"><text>Vertical offset of the second additional label from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_family"><text>[Label 2] Font:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_family_desc"><text>Font family.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_variant"><text>[Label 2] [Font] Style:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_font_variant_desc"><text>TTF or OTF file from the selected font folder.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_size"><text>[Label 2] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_size_desc"><text>Font size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_r"><text>[Label 2] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_g"><text>[Label 2] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_b"><text>[Label 2] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_2_alpha"><text>[Label 2] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3"><text>[Label 3] Text:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_desc"><text>Additional label.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_x"><text>[Label 3] X:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_x_desc"><text>Horizontal offset of the third additional label from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_y"><text>[Label 3] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_y_desc"><text>Vertical offset of the third additional label from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_family"><text>[Label 3] Font:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_family_desc"><text>Font family.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_variant"><text>[Label 3] [Font] Style:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_font_variant_desc"><text>TTF or OTF file from the selected font folder.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_size"><text>[Label 3] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_size_desc"><text>Font size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_r"><text>[Label 3] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_g"><text>[Label 3] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_b"><text>[Label 3] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_universal_custom_label_3_alpha"><text>[Label 3] [Color] Opacity:</text></string>
+
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_title"><text>Grim Raid</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_1_duration"><text>[Timer] Location T1:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_1_duration_desc"><text>How many seconds the player must remain in the area before the automatic transition.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_2_duration"><text>[Timer] Location T2:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_2_duration_desc"><text>How many seconds the player must remain in the area before the automatic transition.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_3_duration"><text>[Timer] Location T3:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_3_duration_desc"><text>How many seconds the player must remain in the area before the automatic transition.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_4_duration"><text>[Timer] Location T4:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_tier_4_duration_desc"><text>How many seconds the player must remain in the area before the automatic transition.</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_file"><text>[Bleeding icon] File:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_x"><text>[Bleeding icon] X:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_x_desc"><text>Horizontal offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_y"><text>[Bleeding icon] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_y_desc"><text>Vertical offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_scale"><text>[Bleeding icon] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_scale_desc"><text>Image size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_r"><text>[Bleeding icon] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_g"><text>[Bleeding icon] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_b"><text>[Bleeding icon] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_droplet_alpha"><text>[Bleeding icon] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_file"><text>[Radiation icon] File:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_x"><text>[Radiation icon] X:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_x_desc"><text>Horizontal offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_y"><text>[Radiation icon] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_y_desc"><text>Vertical offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_scale"><text>[Radiation icon] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_scale_desc"><text>Image size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_r"><text>[Radiation icon] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_g"><text>[Radiation icon] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_b"><text>[Radiation icon] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_radiation_alpha"><text>[Radiation icon] [Color] Opacity:</text></string>
+
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_file"><text>[Death icon] File:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_x"><text>[Death icon] X:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_x_desc"><text>Horizontal offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_y"><text>[Death icon] Y:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_y_desc"><text>Vertical offset of the image from the group center.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_scale"><text>[Death icon] Scale:</text></string>
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_scale_desc"><text>Image size.</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_r"><text>[Death icon] [Color] R:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_g"><text>[Death icon] [Color] G:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_b"><text>[Death icon] [Color] B:</text></string>
+
+    <string id="ui_mcm_transition_countdown_grim_raid_icon_skull_alpha"><text>[Death icon] [Color] Opacity:</text></string>
+</string_table>

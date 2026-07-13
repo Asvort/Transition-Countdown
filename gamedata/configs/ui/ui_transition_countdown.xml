@@ -1,0 +1,65 @@
+<w>
+    <transition_countdown_config x="162" y="410" width="700" height="330" stretch="1">
+        <frame x="0" y="0" width="700" height="330" stretch="1">
+            <texture r="150" g="150" b="150" a="150">ui_icons_PDA_tooltips</texture>
+        </frame>
+
+        <scroll x="20" y="10" width="660" height="320" right_ident="0" left_ident="0" top_indent="0" bottom_indent="0" vert_interval="0" always_show_scroll="0"/>
+        <st x="0" y="0" width="660" height="30"/>
+
+        <divider x="0" y="0" width="640" height="16" stretch="1">
+            <line x="0" y="0" width="640" height="16" stretch="1">
+                <texture r="200" g="200" b="200" a="255">ui_inGame2_opt_slider_bar_back</texture>
+            </line>
+        </divider>
+
+        <cap x="0" y="0" width="97.5" height="20" stretch="1">
+            <text r="200" g="200" b="200" align="l" vert_align="c" font="letterica16"/>
+        </cap>
+
+        <num x="115" y="0" width="245" height="20" stretch="1">
+            <text complex_mode="1" r="200" g="150" b="100" align="c" vert_align="c" font="letterica16"/>
+        </num>
+
+        <input x="140" y="0" width="478" height="25">
+            <text x="5" r="220" g="220" b="220" font="letterica16" vert_align="c" align="l"/>
+            <texture>ui_inGame2_edit_box_2</texture>
+        </input>
+
+        <input_apply_frame x="615" y="0" width="24" height="24" stretch="1">
+            <texture>ui_stroketextbox</texture>
+        </input_apply_frame>
+
+        <input_apply_background x="615" y="0" width="24" height="24" stretch="1">
+            <texture>ui_button_inv</texture>
+        </input_apply_background>
+
+        <input_apply_highlight x="615" y="0" width="24" height="24" stretch="1">
+            <texture>ui_button_inv_h</texture>
+        </input_apply_highlight>
+
+        <input_apply x="615" y="0" width="24" height="24" stretch="1">
+            <texture_e>ui_button_empty</texture_e>
+            <texture_h>ui_button_empty</texture_h>
+            <texture_t>ui_button_empty</texture_t>
+        </input_apply>
+
+        <input_apply_icon x="6" y="6" width="12" height="12" stretch="1">
+            <texture>ui\transition_countdown\icons\check_mark.dds</texture>
+        </input_apply_icon>
+
+        <key_bind_frame x="352.5" y="0" width="275" height="24" stretch="1">
+            <texture>ui_stroketextbox</texture>
+        </key_bind_frame>
+
+        <key_bind_button x="352.5" y="0" width="275" height="24" stretch="1">
+            <texture>ui_button_inv</texture>
+        </key_bind_button>
+
+        <key_bind_text x="352.5" y="0" width="275" height="24" stretch="1">
+            <text r="200" g="200" b="200" align="c" vert_align="c" font="letterica16"/>
+        </key_bind_text>
+
+        <track x="352.5" y="2" width="275" height="16" stretch="1" step="1.0"/>
+    </transition_countdown_config>
+</w>
