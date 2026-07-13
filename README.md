@@ -2,14 +2,17 @@
 **Мод изменяет механику перехода на другую локацию.**
 
 **Скрывает базовое меню перехода на другую локацию и добавляет полностью настраиваемую табличку с таймером. Если игрок находится в зоне перехода, вызывается системный телепорт на другую локацию. Есть возможность перехода одной клавишей.**
+ - Поддерживает современный форматы шрифтов: TTF и OTF.
+ - Поддерживает современные форматы изображений: .bmp .gif .ico .jpeg .jpg .png .pnm .qoi .svg .tga .tif .tiff .webp.
  - Совместим с чем угодно.
  - Положение в списке MO2 влияет на приоритет, ниже в списке - выше приоритет.
+ - Имеет поддержку модификации "Рейд во Мрак".
 <details open>
 <summary>🏞️</summary>
 
-> <img width="1920" height="1080" alt="2026-07-04_23-17-14" src="https://github.com/user-attachments/assets/4681241a-fe58-478f-9777-43790f80e226" />
-> <img width="1920" height="1080" alt="2026-07-04_23-16-48" src="https://github.com/user-attachments/assets/cb8e3ba8-073e-4a95-877d-16af72968a84" />
-> <img width="1920" height="1080" alt="2026-07-04_23-16-31" src="https://github.com/user-attachments/assets/48be70a9-e7a2-4323-9b2a-4e1c0cbab647" />
+> <img width="1920" height="1080" alt="2026-07-13_22-09-54" src="https://github.com/user-attachments/assets/f67c0b63-e825-45f9-82b7-29c478fcfd2f" />
+> <img width="1920" height="1080" alt="2026-07-13_22-10-05" src="https://github.com/user-attachments/assets/4f1a453b-db4c-4d2d-a216-b394ea715f50" />
+> <img width="1920" height="1080" alt="2026-07-13_22-11-34" src="https://github.com/user-attachments/assets/4fe2d261-5bac-4c58-bc49-9371700f45d3" />
 </details>
 
 ## [🖥️] Tested || Протестирован
